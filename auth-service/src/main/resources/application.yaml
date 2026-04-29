@@ -6,7 +6,7 @@ spring:
     username: root
     password: root
 token:
-  lifetime: 123
+  lifetime: 3600000
   key: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
 server:
   port: 1812
