@@ -1,4 +1,4 @@
-package com.bookhub.authservice.dtos;
+package com.bookhub.authservice.dtos.responses;
 
 public record JwtResponseDto(String token) {
 

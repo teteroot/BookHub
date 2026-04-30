@@ -1,5 +1,6 @@
 package com.bookhub.authservice.security;
 
+import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
@@ -21,7 +22,8 @@ public class JwtCore {
     private String key;
 
     public String generateToken(Authentication authentication){
-        var user = ((UserDetailsImpl)authentication).getUser();
+        if (authentication.getPrincipal() == null) throw new UserNotFoundException();
+        var user = ((UserDetailsImpl)authentication.getPrincipal()).getUser();
         return Jwts.builder()
                 .claim("uuid",user.getId())
                 .claim("role",user.getRole() )
