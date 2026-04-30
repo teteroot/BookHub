@@ -6,6 +6,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -26,4 +27,21 @@ public class User {
     @Enumerated(EnumType.STRING)
     private UserRole role;
 
+    public User(String email, String password, UserRole role) {
+        this.email = email;
+        this.password = password;
+        this.role = role;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(email, user.email) && Objects.equals(password, user.password) && role == user.role;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(email, password, role);
+    }
 }
