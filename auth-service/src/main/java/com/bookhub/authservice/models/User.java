@@ -2,9 +2,7 @@ package com.bookhub.authservice.models;
 
 import com.bookhub.authservice.enums.UserRole;
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.Objects;
 import java.util.UUID;
@@ -13,6 +11,8 @@ import java.util.UUID;
 @Table(name = "users")
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class User {
 
@@ -26,12 +26,6 @@ public class User {
 
     @Enumerated(EnumType.STRING)
     private UserRole role;
-
-    public User(String email, String password, UserRole role) {
-        this.email = email;
-        this.password = password;
-        this.role = role;
-    }
 
     @Override
     public boolean equals(Object o) {
