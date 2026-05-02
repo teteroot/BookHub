@@ -1,11 +1,13 @@
 package com.bookhub.authservice.security;
 
 import com.bookhub.authservice.services.UserService;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -22,19 +24,24 @@ public class TokenFilter extends OncePerRequestFilter {
     private final UserService userService;
 
     @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
         String header = request.getHeader("Authorization");
         if (header == null || !header.startsWith("Bearer ")){
             doFilter(request,response,filterChain);
             return;
         }
         String jwt = header.substring(7);
-        var claims = jwtCore.claims(jwt);
-        UUID id = claims.get("uuid", UUID.class);
-        var userDetails = new UserDetailsImpl(userService.loadUserByUUID(id));
-        var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
-                                                                userDetails.getAuthorities());
-        SecurityContextHolder.getContext().setAuthentication(auth);
-        doFilter(request,response,filterChain);
+        try {
+            var claims = jwtCore.claims(jwt);
+            UUID id = UUID.fromString(claims.get("uuid", String.class));
+            var userDetails = new UserDetailsImpl(userService.loadUserByUUID(id));
+            var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                    userDetails.getAuthorities());
+            SecurityContextHolder.getContext().setAuthentication(auth);
+            doFilter(request,response,filterChain);
+        }
+        catch (JwtException e){
+            doFilter(request,response,filterChain);
+        }
     }
 }
