@@ -2,6 +2,7 @@ package com.bookhub.authservice.security;
 
 import com.bookhub.authservice.models.User;
 import lombok.Getter;
+import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -19,6 +20,7 @@ public class UserDetailsImpl implements UserDetails {
 
 
     @Override
+    @NullMarked
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(()-> user.getRole().toString());
     }
@@ -29,6 +31,7 @@ public class UserDetailsImpl implements UserDetails {
     }
 
     @Override
+    @NullMarked
     public String getUsername() {
         return user.getEmail();
     }
