@@ -1,0 +1,42 @@
+package com.bookhub.authservice.controllers;
+
+import com.bookhub.authservice.dtos.requests.LoginRequestDto;
+import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
+import com.bookhub.authservice.dtos.responses.JwtResponseDto;
+import com.bookhub.authservice.services.AuthService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+@Slf4j
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+
+    private final AuthService authService;
+
+    @PostMapping("/register")
+    public ResponseEntity<Void> register(@RequestBody RegisterRequestDto registerRequestDto){
+        authService.registerNewUser(
+                registerRequestDto.getEmail(),
+                registerRequestDto.getPassword(),
+                registerRequestDto.getRole(),
+                registerRequestDto.getPersonData()
+        );
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
+        return ResponseEntity.ok(new JwtResponseDto(
+                authService.authenticate(loginRequestDto.email(),loginRequestDto.password())
+        ));
+    }
+}
