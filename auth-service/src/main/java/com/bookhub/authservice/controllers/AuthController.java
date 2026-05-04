@@ -40,8 +40,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
+        var auth = authService.authenticate(loginRequestDto.email(),loginRequestDto.password());
         return ResponseEntity.ok(new JwtResponseDto(
-                authService.authenticate(loginRequestDto.email(),loginRequestDto.password())
+                authService.generateAccessToken(auth)
         ));
     }
 }
