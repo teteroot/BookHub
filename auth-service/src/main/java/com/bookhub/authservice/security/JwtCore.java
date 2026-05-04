@@ -13,7 +13,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
 @Component
-@ConfigurationProperties(prefix = "token")
+@ConfigurationProperties(prefix = "security.jwt")
 @Setter
 public class JwtCore {
 
