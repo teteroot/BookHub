@@ -8,6 +8,8 @@ import com.bookhub.authservice.services.RegisterService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
 @RequiredArgsConstructor
 public class RegisterServiceImpl implements RegisterService {
@@ -17,6 +19,7 @@ public class RegisterServiceImpl implements RegisterService {
 
 
     @Override
+    @Transactional
     public void register(String email, String password, UserRole role) {
         if (userRepository.findUserByEmail(email).isPresent()) {
             throw new EmailIsAlreadyUsedException(email);
