@@ -15,7 +15,7 @@ public class RegisterRequestDto {
     @Email(message = "incorrect email")
     private String email;
 
-    @Size(min = 6, message = "password must be greater than 6")
+    @Size(min = 6, message = "password at least 6 characters")
     private String password;
 
     private UserRole role;
