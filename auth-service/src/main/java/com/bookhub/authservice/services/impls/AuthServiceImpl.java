@@ -4,6 +4,7 @@ import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.enums.UserRole;
 import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
 import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
+import com.bookhub.authservice.models.RefreshToken;
 import com.bookhub.authservice.ports.ProfileProvisioningPort;
 import com.bookhub.authservice.security.JwtCore;
 import com.bookhub.authservice.security.UserDetailsImpl;
@@ -17,6 +18,9 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -47,20 +51,32 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
+    public String refreshAccessToken(String refreshToken) {
+        var token = refreshTokenService.loadTokenByUUID(UUID.fromString(refreshToken));
+        refreshTokenService.checkTokenExpiration(token);
+        var userDetails = new UserDetailsImpl(token.getUser());
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+        return generateAccessToken(auth);
+    }
+
+
+    @Override
     public String generateAccessToken(Authentication authentication) {
         return jwtCore.generateToken(authentication);
     }
 
     @Override
-    public String generateRefreshToken(Authentication authentication) {
+    public RefreshToken generateRefreshToken(Authentication authentication) {
         if (authentication.getPrincipal() == null) throw new UserNotFoundException();
         var user = ((UserDetailsImpl)authentication.getPrincipal()).getUser();
         try {
             var token = refreshTokenService.loadUserRefreshToken(user);
             refreshTokenService.updateExpiration(token);
-            return String.valueOf(token.getToken());
+            return token;
         } catch (RefreshTokenNotFoundException e){
-            return String.valueOf(refreshTokenService.generateToken(authentication).getToken());
+            return refreshTokenService.generateToken(authentication);
         }
     }
 

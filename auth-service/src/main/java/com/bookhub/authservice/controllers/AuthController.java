@@ -5,16 +5,18 @@ import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
 import com.bookhub.authservice.dtos.responses.JwtResponseDto;
 import com.bookhub.authservice.exceptions.extensions.IncorrectRegisterDataException;
 import com.bookhub.authservice.services.AuthService;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.Duration;
+import java.time.Instant;
 
 @Slf4j
 @RestController
@@ -39,11 +41,24 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
+    public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto,
+                                                HttpServletResponse response){
         var auth = authService.authenticate(loginRequestDto.email(),loginRequestDto.password());
+        var refreshToken = authService.generateRefreshToken(auth);
+        var cookie = new Cookie("refreshToken", String.valueOf(refreshToken.getToken()));
+        cookie.setMaxAge((int) Duration.between(Instant.now(), refreshToken.getExpiration()).getSeconds());
+        cookie.setPath("/");
+        cookie.setSecure(false);
+        cookie.setHttpOnly(true);
+        response.addCookie(cookie);
         return ResponseEntity.ok(new JwtResponseDto(
-                authService.generateAccessToken(auth),
-                authService.generateRefreshToken(auth)
+                authService.generateAccessToken(auth)
         ));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<JwtResponseDto> refreshToken(@CookieValue(name = "refreshToken") String refreshToken){
+        var jwt = authService.refreshAccessToken(refreshToken);
+        return ResponseEntity.ok(new JwtResponseDto(jwt));
     }
 }
