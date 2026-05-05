@@ -2,8 +2,11 @@ package com.bookhub.authservice.services.impls;
 
 import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.enums.UserRole;
+import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
+import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
 import com.bookhub.authservice.ports.ProfileProvisioningPort;
 import com.bookhub.authservice.security.JwtCore;
+import com.bookhub.authservice.security.UserDetailsImpl;
 import com.bookhub.authservice.services.AuthService;
 import com.bookhub.authservice.services.RefreshTokenService;
 import com.bookhub.authservice.services.RegisterService;
@@ -50,8 +53,15 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public String generateRefreshToken(Authentication authentication) {
-        //TODO check exist token
-        return String.valueOf(refreshTokenService.generateToken(authentication).getToken());
+        if (authentication.getPrincipal() == null) throw new UserNotFoundException();
+        var user = ((UserDetailsImpl)authentication.getPrincipal()).getUser();
+        try {
+            var token = refreshTokenService.loadUserRefreshToken(user);
+            refreshTokenService.updateExpiration(token);
+            return String.valueOf(token.getToken());
+        } catch (RefreshTokenNotFoundException e){
+            return String.valueOf(refreshTokenService.generateToken(authentication).getToken());
+        }
     }
 
 }

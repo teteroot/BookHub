@@ -42,7 +42,8 @@ public class AuthController {
     public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto){
         var auth = authService.authenticate(loginRequestDto.email(),loginRequestDto.password());
         return ResponseEntity.ok(new JwtResponseDto(
-                authService.generateAccessToken(auth)
+                authService.generateAccessToken(auth),
+                authService.generateRefreshToken(auth)
         ));
     }
 }
