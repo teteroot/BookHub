@@ -1,5 +1,6 @@
 package com.bookhub.authservice.services.impls;
 
+import com.bookhub.authservice.exceptions.extensions.RefreshTokenExpireException;
 import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
 import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
 import com.bookhub.authservice.models.RefreshToken;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -46,9 +48,22 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    public RefreshToken loadTokenByUUID(UUID token) {
+        return refreshTokenRepository.findById(token)
+                .orElseThrow(RefreshTokenNotFoundException::new);
+    }
+
+    @Override
     @Transactional
     public void updateExpiration(RefreshToken refreshToken) {
         refreshToken.setExpiration(Instant.now().plusMillis(lifetime));
         refreshTokenRepository.save(refreshToken);
+    }
+
+    @Override
+    public void checkTokenExpiration(RefreshToken refreshToken) {
+        if (Instant.now().isAfter(refreshToken.getExpiration())){
+            throw new RefreshTokenExpireException();
+        }
     }
 }
