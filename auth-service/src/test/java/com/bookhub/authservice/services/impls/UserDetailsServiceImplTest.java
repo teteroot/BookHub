@@ -9,12 +9,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UserDetailsServiceImplTest {
@@ -32,7 +32,7 @@ class UserDetailsServiceImplTest {
 
         var result = assertDoesNotThrow(() -> userDetailsService.loadUserByUsername("username"));
         assertNotNull(result);
-        assertTrue(result instanceof UserDetailsImpl);
+        assertInstanceOf(UserDetailsImpl.class, result);
     }
 
     @Test
