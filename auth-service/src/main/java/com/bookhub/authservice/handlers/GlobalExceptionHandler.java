@@ -3,6 +3,7 @@ package com.bookhub.authservice.handlers;
 import com.bookhub.authservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.authservice.exceptions.BadRequestException;
 import com.bookhub.authservice.exceptions.NotFoundException;
+import com.bookhub.authservice.exceptions.TooManyRequestsException;
 import com.bookhub.authservice.exceptions.extensions.IncorrectRegisterDataException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +34,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IncorrectRegisterDataException.class)
     public ResponseEntity<ErrorResponseDto> handleIncorrectRegisterDataException(IncorrectRegisterDataException e){
         return new ResponseEntity<>(new ErrorResponseDto(e.getMessage(), Instant.now(),400),HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponseDto> handleTooManyRequestsException(TooManyRequestsException e){
+        return new ResponseEntity<>(new ErrorResponseDto(e.getMessage(), Instant.now(),429),HttpStatus.TOO_MANY_REQUESTS);
     }
 
 }

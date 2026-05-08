@@ -3,8 +3,10 @@ package com.bookhub.authservice.controllers;
 import com.bookhub.authservice.dtos.requests.LoginRequestDto;
 import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
 import com.bookhub.authservice.dtos.responses.JwtResponseDto;
+import com.bookhub.authservice.exceptions.TooManyRequestsException;
 import com.bookhub.authservice.exceptions.extensions.IncorrectRegisterDataException;
 import com.bookhub.authservice.services.AuthService;
+import io.github.bucket4j.Bucket;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
@@ -26,10 +28,12 @@ public class AuthController {
 
 
     private final AuthService authService;
+    private final Bucket bucket;
 
     @PostMapping("/register")
     public ResponseEntity<Void> register(@Valid @RequestBody RegisterRequestDto registerRequestDto,
                                          BindingResult result){
+        if (!bucket.tryConsume(1)) throw new TooManyRequestsException();
         if (result.hasErrors()) throw new IncorrectRegisterDataException(result);
         authService.registerNewUser(
                 registerRequestDto.getEmail(),
@@ -43,6 +47,7 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<JwtResponseDto> login(@RequestBody LoginRequestDto loginRequestDto,
                                                 HttpServletResponse response){
+        if (!bucket.tryConsume(1)) throw new TooManyRequestsException();
         var auth = authService.authenticate(loginRequestDto.email(),loginRequestDto.password());
         var refreshToken = authService.generateRefreshToken(auth);
         var cookie = new Cookie("refreshToken", String.valueOf(refreshToken.getToken()));
@@ -58,6 +63,7 @@ public class AuthController {
 
     @PostMapping("/refresh")
     public ResponseEntity<JwtResponseDto> refreshToken(@CookieValue(name = "refreshToken") String refreshToken){
+        if (!bucket.tryConsume(1)) throw new TooManyRequestsException();
         var jwt = authService.refreshAccessToken(refreshToken);
         return ResponseEntity.ok(new JwtResponseDto(jwt));
     }
