@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -23,4 +24,16 @@ public class RefreshToken {
     private User user;
 
     private Instant expiration;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        RefreshToken token1 = (RefreshToken) o;
+        return Objects.equals(token, token1.token);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(token);
+    }
 }

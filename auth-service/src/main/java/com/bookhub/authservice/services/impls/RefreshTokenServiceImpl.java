@@ -61,8 +61,10 @@ public class RefreshTokenServiceImpl implements RefreshTokenService {
     }
 
     @Override
+    @Transactional(noRollbackFor = RefreshTokenExpireException.class)
     public void checkTokenExpiration(RefreshToken refreshToken) {
         if (Instant.now().isAfter(refreshToken.getExpiration())){
+            refreshTokenRepository.delete(refreshToken);
             throw new RefreshTokenExpireException();
         }
     }
