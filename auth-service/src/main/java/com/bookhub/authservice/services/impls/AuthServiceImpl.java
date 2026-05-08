@@ -53,12 +53,16 @@ public class AuthServiceImpl implements AuthService {
     @Override
     @Transactional
     public String refreshAccessToken(String refreshToken) {
-        var token = refreshTokenService.loadTokenByUUID(UUID.fromString(refreshToken));
-        refreshTokenService.checkTokenExpiration(token);
-        var userDetails = new UserDetailsImpl(token.getUser());
-        var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
-                userDetails.getAuthorities());
-        return generateAccessToken(auth);
+        try {
+            var token = refreshTokenService.loadTokenByUUID(UUID.fromString(refreshToken));
+            refreshTokenService.checkTokenExpiration(token);
+            var userDetails = new UserDetailsImpl(token.getUser());
+            var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                    userDetails.getAuthorities());
+            return generateAccessToken(auth);
+        } catch (IllegalArgumentException e){
+            throw new RefreshTokenNotFoundException();
+        }
     }
 
 
