@@ -14,7 +14,9 @@
 /**/!gradle/wrapper/gradle-wrapper.jar
 /**/!**/src/main/**/build/
 /**/!**/src/test/**/build/
-
+gradlew
+gradlew.bat
+gradle-wrapper.properties
 ### STS ###
 .apt_generated
 .classpath
