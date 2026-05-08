@@ -2,6 +2,7 @@ package com.bookhub.authservice.services.impls;
 
 import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.enums.UserRole;
+import com.bookhub.authservice.exceptions.extensions.RefreshTokenExpireException;
 import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
 import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
 import com.bookhub.authservice.models.RefreshToken;
@@ -51,7 +52,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
+    @Transactional(noRollbackFor = RefreshTokenExpireException.class)
     public String refreshAccessToken(String refreshToken) {
         try {
             var token = refreshTokenService.loadTokenByUUID(UUID.fromString(refreshToken));
