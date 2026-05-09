@@ -1,3 +1,9 @@
 spring:
   application:
     name: profile-service
+  datasource:
+    url: jdbc:postgresql://localhost:5431/Profile
+    username: root
+    password: root
+server:
+  port: 8001
