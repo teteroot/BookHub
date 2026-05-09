@@ -4,5 +4,6 @@ CREATE TABLE persons(
     last_name VARCHAR(20) NOT NULL ,
     date_of_birth TIMESTAMP NOT NULL,
     date_of_registration TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    biography TEXT
+    biography TEXT,
+    role varchar(10) NOT NULL
 );
