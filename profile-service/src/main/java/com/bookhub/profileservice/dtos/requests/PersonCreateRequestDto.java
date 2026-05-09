@@ -17,11 +17,9 @@ public class PersonCreateRequestDto {
     @NotNull(message = "ID must not be null")
     private UUID id;
 
-    @NotBlank(message = "First name must not be empty")
     @Size(min = 2, max = 20, message = "First name must be between 2 and 20 characters")
     private String firstName;
 
-    @NotBlank(message = "Last name must not be empty")
     @Size(min = 2, max = 20, message = "Last name must be between 2 and 20 characters")
     private String lastName;
 
