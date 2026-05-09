@@ -6,6 +6,8 @@ import com.bookhub.profileservice.services.PersonService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 @Service
 @RequiredArgsConstructor
 public class PersonServiceImpl implements PersonService {
@@ -14,6 +16,7 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     public void createPerson(Person person) {
+        person.setDateOfRegistration(Instant.now());
         personRepository.save(person);
     }
 }
