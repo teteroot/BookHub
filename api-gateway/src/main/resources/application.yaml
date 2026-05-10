@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: api-gateway
+  mvc:
+    log-request-details: true
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: auth-service
+              uri: http://localhost:1812
+              predicates:
+                - Path=/api/v1/auth/**
+              filters:
+                - StripPrefix=0
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.DispatcherServlet: DEBUG
+    org.springframework.cloud.gateway: DEBUG
+    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: DEBUG
+server:
+  port: 8888
