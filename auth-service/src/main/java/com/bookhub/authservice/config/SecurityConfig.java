@@ -1,8 +1,8 @@
 package com.bookhub.authservice.config;
 
+import com.bookhub.authservice.security.GatewayVerificationFilter;
 import com.bookhub.authservice.security.TokenFilter;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -17,31 +17,18 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    @Value("${security.origin.gateway}")
-    private String GATEWAY_URL;
-
     private final TokenFilter tokenFilter;
+    private final GatewayVerificationFilter gatewayVerificationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
         http.csrf(AbstractHttpConfigurer::disable)
-                .cors((cors) -> cors.configurationSource((request -> {
-                    var config = new CorsConfiguration();
-                    config.setAllowedOriginPatterns(List.of(GATEWAY_URL));
-                    config.setAllowedMethods(List.of("*"));
-                    config.setAllowedHeaders(List.of("*"));
-                    config.setAllowCredentials(true);
-                    return config;
-                } )))
                 .exceptionHandling(exceptions -> exceptions
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .sessionManagement(session -> session
@@ -51,7 +38,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .anyRequest().fullyAuthenticated()
 
-                ).addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
+                ).addFilterBefore(gatewayVerificationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
 
