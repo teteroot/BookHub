@@ -22,7 +22,11 @@ extra["springCloudVersion"] = "2025.1.1"
 
 dependencies {
 //    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc")
+    // Source: https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-gateway
+    implementation("io.jsonwebtoken:jjwt-impl:0.13.0")
+    implementation("io.jsonwebtoken:jjwt-jackson:0.13.0")
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webflux")
+    implementation("org.springframework.boot:spring-boot-starter-webclient")
     compileOnly("org.projectlombok:lombok")
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-security-test")
