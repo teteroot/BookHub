@@ -15,7 +15,7 @@ import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
-public class LoggingGlobalFilter implements GlobalFilter, Ordered {
+public class AuthenticationGlobalFilter implements GlobalFilter, Ordered {
 
     private final String REQUEST_HEADER_NAME = "Authorization";
     private final String REQUEST_HEADER_PREFIX = "Bearer ";
