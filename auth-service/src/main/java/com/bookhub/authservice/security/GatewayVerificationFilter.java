@@ -17,10 +17,13 @@ public class GatewayVerificationFilter extends OncePerRequestFilter {
 
     @Value("${security.origin.gateway.secret}")
     private String gatewaySecret;
+
+    private final String REQUEST_HEADER_NAME = "X-Gateway-Secret";
+
     @Override
     @NullMarked
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
-        var secret = response.getHeader("X-Gateway-Secret");
+        var secret = request.getHeader(REQUEST_HEADER_NAME);
         if (secret == null || !secret.equals(gatewaySecret)) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
