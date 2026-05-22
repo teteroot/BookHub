@@ -2,6 +2,7 @@ package com.bookhub.authservice.config;
 
 import com.bookhub.authservice.security.TokenFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
+    @Value("${security.origin.gateway}")
+    private String GATEWAY_URL;
+
     private final TokenFilter tokenFilter;
 
     @Bean
@@ -32,8 +36,7 @@ public class SecurityConfig {
         http.csrf(AbstractHttpConfigurer::disable)
                 .cors((cors) -> cors.configurationSource((request -> {
                     var config = new CorsConfiguration();
-                    //TODO change to api gateway
-                    config.setAllowedOriginPatterns(List.of("*"));
+                    config.setAllowedOriginPatterns(List.of(GATEWAY_URL));
                     config.setAllowedMethods(List.of("*"));
                     config.setAllowedHeaders(List.of("*"));
                     config.setAllowCredentials(true);
