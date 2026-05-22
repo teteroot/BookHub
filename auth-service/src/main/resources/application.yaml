@@ -9,6 +9,8 @@ security:
   jwt:
     lifetime: 3600000
     key: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
+  origin:
+    gateway: 127.0.0.1:8888
   refresh:
     lifetime: 2592000000
 rate-limiting:
