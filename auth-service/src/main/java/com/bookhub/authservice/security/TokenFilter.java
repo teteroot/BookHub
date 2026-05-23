@@ -1,7 +1,6 @@
 package com.bookhub.authservice.security;
 
-import com.bookhub.authservice.services.UserService;
-import io.jsonwebtoken.JwtException;
+import com.bookhub.authservice.enums.UserRole;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,28 +19,23 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TokenFilter extends OncePerRequestFilter {
 
-    private final JwtCore jwtCore;
-    private final UserService userService;
+    private final String USER_ID_HEADER_NAME = "X-User-Id";
+    private final String USER_ROLE_HEADER_NAME = "X-User-Role";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
-        String header = request.getHeader("Authorization");
-        if (header == null || !header.startsWith("Bearer ")){
+        String roleHeader = request.getHeader(USER_ROLE_HEADER_NAME);
+        String uuidHeader = request.getHeader(USER_ID_HEADER_NAME);
+        if (uuidHeader == null || uuidHeader.isEmpty()) {
             filterChain.doFilter(request,response);
             return;
         }
-        String jwt = header.substring(7);
-        try {
-            var claims = jwtCore.claims(jwt);
-            UUID id = UUID.fromString(claims.get("uuid", String.class));
-            var userDetails = new UserDetailsImpl(userService.loadUserByUUID(id));
-            var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
-                    userDetails.getAuthorities());
-            SecurityContextHolder.getContext().setAuthentication(auth);
-            filterChain.doFilter(request,response);
-        }
-        catch (JwtException e){
-            filterChain.doFilter(request,response);
-        }
+        UUID id = UUID.fromString(uuidHeader);
+        UserRole role = UserRole.valueOf(roleHeader);
+        var userDetails = new GatewayUserDetails(id,role);
+        var auth = new UsernamePasswordAuthenticationToken(userDetails, null,
+                userDetails.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        filterChain.doFilter(request,response);
     }
 }

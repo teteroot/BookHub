@@ -1,7 +1,6 @@
 package com.bookhub.authservice.security;
 
 import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
-import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.Setter;
@@ -32,13 +31,5 @@ public class JwtCore {
                 .signWith(Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8)))
                 .compact();
     }
-
-    public Claims claims(String jwt){
-        return Jwts.parser().verifyWith(Keys.hmacShaKeyFor(key.getBytes(StandardCharsets.UTF_8)))
-                .build().parseSignedClaims(jwt).getPayload();
-    }
-
-
-
 
 }
