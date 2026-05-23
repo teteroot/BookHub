@@ -7,3 +7,7 @@ spring:
     password: root
 server:
   port: 8001
+security:
+  origin:
+    gateway:
+      secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
