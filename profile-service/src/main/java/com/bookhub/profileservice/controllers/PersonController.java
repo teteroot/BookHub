@@ -1,6 +1,9 @@
 package com.bookhub.profileservice.controllers;
 
 import com.bookhub.profileservice.dtos.requests.PersonCreateRequestDto;
+import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
+import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
+import com.bookhub.profileservice.dtos.responses.PersonResponseDto;
 import com.bookhub.profileservice.exceptions.extensions.IncorrectRequestDataException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.security.GatewayUserDetails;
@@ -35,4 +38,24 @@ public class PersonController {
         return ResponseEntity.ok(userDetails.getUserId().toString());
     }
 
+    @GetMapping("/{uuid}")
+    public ResponseEntity<PersonResponseDto> getPersonBiography(@PathVariable String uuid){
+        var dto = personMapper.toDto(personService.loadPersonByUUID(uuid));
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/{uuid}/biography")
+    public ResponseEntity<BiographyResponseDto> getPerson(@PathVariable String uuid){
+        return ResponseEntity.ok(personService.loadPersonBiographyByUUID(uuid));
+    }
+
+    @PatchMapping("/me")
+    public ResponseEntity<Void> updatePerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                               @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto,
+                                               BindingResult result){
+        if (result.hasErrors()) throw new IncorrectRequestDataException(result);
+        var person = personMapper.toPerson(personUpdateRequestDto);
+        personService.updatePerson(userDetails.getUserId(),person);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
 }

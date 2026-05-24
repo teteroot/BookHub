@@ -28,6 +28,7 @@ public class Person {
     @CreatedDate
     private Instant dateOfRegistration;
 
+   @Basic(fetch = FetchType.LAZY)
     private String biography;
 
     @Enumerated(value = EnumType.STRING)
