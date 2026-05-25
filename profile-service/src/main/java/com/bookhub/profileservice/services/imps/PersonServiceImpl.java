@@ -7,6 +7,8 @@ import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.PersonService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,6 +26,20 @@ public class PersonServiceImpl implements PersonService {
     public void createPerson(Person person) {
         person.setDateOfRegistration(Instant.now());
         personRepository.save(person);
+    }
+
+    @Override
+    public Page<Person> searchPersons(String query, int page, int size) {
+        String[] firstAndLastName = query.split(" ", 2);
+        if (firstAndLastName.length == 2) {
+            return personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(
+                    firstAndLastName[0], firstAndLastName[1], PageRequest.of(page, size)
+            );
+        }
+        return personRepository.findByFirstNameOrLastName(
+                firstAndLastName[0],PageRequest.of(page, size)
+        );
+
     }
 
     @Override

@@ -10,6 +10,7 @@ import com.bookhub.profileservice.security.GatewayUserDetails;
 import com.bookhub.profileservice.services.PersonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -36,6 +37,14 @@ public class PersonController {
     @GetMapping("/me")
     public ResponseEntity<String> getMyUUID(@AuthenticationPrincipal GatewayUserDetails userDetails){
         return ResponseEntity.ok(userDetails.getUserId().toString());
+    }
+
+    @GetMapping("/search/{page}")
+    public ResponseEntity<PagedModel<PersonResponseDto>> getMyUUID(@RequestParam String query,
+                                                                   @PathVariable Integer page){
+        var dto = personService.searchPersons(query,page,10)
+                .map(personMapper::toDto);
+        return ResponseEntity.ok(new PagedModel<>(dto));
     }
 
     @GetMapping("/{uuid}")
