@@ -6,10 +6,12 @@ import com.bookhub.authservice.exceptions.NotFoundException;
 import com.bookhub.authservice.exceptions.TooManyRequestsException;
 import com.bookhub.authservice.exceptions.extensions.IncorrectRegisterDataException;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 
@@ -19,6 +21,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<ErrorResponseDto> handleNotFoundExceptions(NotFoundException e){
         return new ResponseEntity<>(new ErrorResponseDto(e.getMessage(), Instant.now(),404),HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<String> handleResponseStatusException(ResponseStatusException e){
+        var response = new ResponseEntity<>(e.getReason(),e.getStatusCode());
+        response.getHeaders().setContentType(MediaType.APPLICATION_JSON);
+        return response;
     }
 
     @ExceptionHandler(BadRequestException.class)

@@ -46,8 +46,11 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    @Transactional
     public void registerNewUser(String email, String password, UserRole role, PersonDataRequestDto personDataRequestDto) {
-        registerService.register(email,password,role);
+        var uuid = registerService.register(email,password,role);
+        personDataRequestDto.setId(uuid);
+        personDataRequestDto.setRole(role);
         profileProvisioningPort.createPerson(personDataRequestDto);
     }
 

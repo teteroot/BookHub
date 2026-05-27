@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Service
 @RequiredArgsConstructor
 public class RegisterServiceImpl implements RegisterService {
@@ -20,7 +22,7 @@ public class RegisterServiceImpl implements RegisterService {
 
     @Override
     @Transactional
-    public void register(String email, String password, UserRole role) {
+    public UUID register(String email, String password, UserRole role) {
         if (userRepository.findUserByEmail(email).isPresent()) {
             throw new EmailIsAlreadyUsedException(email);
         }
@@ -29,7 +31,8 @@ public class RegisterServiceImpl implements RegisterService {
                 .password(passwordEncoder.encode(password))
                 .role(role)
                 .build();
-        userRepository.save(user);
+        var savedUser = userRepository.save(user);
+        return savedUser.getId();
     }
 
 }
