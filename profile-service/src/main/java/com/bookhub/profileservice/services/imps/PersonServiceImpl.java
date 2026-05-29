@@ -1,6 +1,7 @@
 package com.bookhub.profileservice.services.imps;
 
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
+import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
 import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
@@ -96,6 +97,14 @@ public class PersonServiceImpl implements PersonService {
         }
         person.getFavoriteAuthors().remove(targetPerson);
         personRepository.save(person);
+    }
+
+    @Override
+    @Transactional
+    public Page<Person> loadAuthors(int page, int size) {
+        return personRepository.findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(
+                UserRole.AUTHOR,PageRequest.of(page,size)
+        );
     }
 
     @Override

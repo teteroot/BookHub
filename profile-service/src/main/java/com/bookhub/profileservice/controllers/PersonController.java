@@ -49,6 +49,14 @@ public class PersonController {
         return ResponseEntity.ok(dto);
     }
 
+    @GetMapping("/authors")
+    public ResponseEntity<PagedModel<PersonResponseDto>> getAuthors(@RequestParam(defaultValue = "0",required = false) int page){
+
+        var dto = personService.loadAuthors(page,10)
+                .map(personMapper::toDto);
+        return ResponseEntity.ok(new PagedModel<>(dto));
+    }
+
     @PostMapping("/favorites/{uuid}")
     public ResponseEntity<Void> addToFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                                          @PathVariable UUID uuid){

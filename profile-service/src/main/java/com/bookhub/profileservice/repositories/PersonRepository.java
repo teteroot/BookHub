@@ -1,6 +1,7 @@
 package com.bookhub.profileservice.repositories;
 
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
+import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.models.Person;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -30,6 +31,16 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            """)
     Page<Person> findByFirstNameOrLastName(String name,
                                            Pageable pageable);
+
+    @Query("""
+           SELECT p
+           FROM Person p
+           WHERE p.role=:role
+           AND SIZE(p.markedAsFavoriteBy) > 0
+           ORDER BY SIZE(p.markedAsFavoriteBy) DESC
+           """)
+    Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
+                                                                      Pageable pageable);
 
     Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
 }

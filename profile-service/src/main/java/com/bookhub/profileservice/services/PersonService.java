@@ -16,4 +16,5 @@ public interface PersonService {
     List<Person> loadFavorites(UUID userId);
     void addToFavorites(UUID userId, UUID targetPersonId);
     void removeFromFavorites(UUID userId, UUID targetPersonId);
+    Page<Person> loadAuthors(int page, int size);
 }
