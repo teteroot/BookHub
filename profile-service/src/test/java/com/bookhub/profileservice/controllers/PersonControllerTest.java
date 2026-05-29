@@ -64,7 +64,7 @@ class PersonControllerTest {
                 Instant.now(),"",
                 UserRole.READER
         );
-        mockMvc.perform(post("/api/v1/persons/")
+        mockMvc.perform(post("/api/v1/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -80,7 +80,7 @@ class PersonControllerTest {
                 UserRole.READER
         );
         when(personMapper.toPerson(any(PersonCreateRequestDto.class))).thenReturn(new Person());
-        mockMvc.perform(post("/api/v1/persons/")
+        mockMvc.perform(post("/api/v1/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated());
