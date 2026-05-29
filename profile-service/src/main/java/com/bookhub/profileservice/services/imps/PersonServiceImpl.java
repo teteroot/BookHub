@@ -2,7 +2,9 @@ package com.bookhub.profileservice.services.imps;
 
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
 import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.PersonService;
@@ -13,6 +15,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -53,24 +57,40 @@ public class PersonServiceImpl implements PersonService {
     }
 
     @Override
-    public Person loadPersonByUUID(String uuid) {
-        try {
-            var id = UUID.fromString(uuid);
-            return personRepository.findById(id)
-                    .orElseThrow(PersonNotFoundException::new);
-        } catch (IllegalArgumentException e) {
-            throw new PersonNotFoundException();
-        }
+    @Transactional
+    public List<Person> loadFavorites(UUID userId) {
+        var person = personRepository.findById(userId)
+                .orElseThrow(PersonNotFoundException::new);
+        return new ArrayList<>(person.getFavoriteAuthors());
     }
 
     @Override
-    public BiographyResponseDto loadPersonBiographyByUUID(String uuid) {
-        try {
-            var id = UUID.fromString(uuid);
-            return personRepository.findBiographyById(id)
-                    .orElseThrow(BiographyNotFoundException::new);
-        } catch (IllegalArgumentException e) {
-            throw new PersonNotFoundException();
+    @Transactional
+    public void addToFavorite(UUID userId, UUID targetPersonId) {
+        if (userId.equals(targetPersonId)){
+            throw new SelfRequestException();
         }
+        var person = personRepository.findById(userId)
+                .orElseThrow(PersonNotFoundException::new);
+        var targetPerson = personRepository.findById(targetPersonId)
+                .orElseThrow(PersonNotFoundException::new);
+        if (personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
+            throw new PersonAlreadyInFavoritesException();
+        }
+        person.getFavoriteAuthors().add(targetPerson);
+        personRepository.save(person);
+    }
+
+    @Override
+    public Person loadPersonByUUID(UUID uuid) {
+        return personRepository.findById(uuid)
+                .orElseThrow(PersonNotFoundException::new);
+    }
+
+    @Override
+    public BiographyResponseDto loadPersonBiographyByUUID(UUID uuid) {
+        return personRepository.findBiographyById(uuid)
+                .orElseThrow(BiographyNotFoundException::new);
+
     }
 }

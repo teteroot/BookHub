@@ -30,4 +30,6 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            """)
     Page<Person> findByFirstNameOrLastName(String name,
                                            Pageable pageable);
+
+    Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
 }

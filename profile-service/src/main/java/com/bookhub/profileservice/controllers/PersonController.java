@@ -17,6 +17,9 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+import java.util.UUID;
+
 @RequiredArgsConstructor
 @RestController
 @RequestMapping("/api/v1/persons")
@@ -39,23 +42,40 @@ public class PersonController {
         return ResponseEntity.ok(userDetails.getUserId().toString());
     }
 
-    @GetMapping("/search/{page}")
+    @GetMapping("/favorite")
+    public ResponseEntity<List<PersonResponseDto>> getMyFavoritesAuthors(@AuthenticationPrincipal GatewayUserDetails userDetails){
+        System.out.println(userDetails.getUserId());
+        var dto = personService.loadFavorites(userDetails.getUserId())
+                .stream().map(personMapper::toDto).toList();
+        return ResponseEntity.ok(dto);
+    }
+
+    @PostMapping("/favorite/{uuid}")
+    public ResponseEntity<Void> addToFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                                         @PathVariable UUID uuid){
+        personService.addToFavorite(userDetails.getUserId(),uuid);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping("/search")
     public ResponseEntity<PagedModel<PersonResponseDto>> getMyUUID(@RequestParam String query,
-                                                                   @PathVariable Integer page){
+                                                                   @RequestParam Integer page){
         var dto = personService.searchPersons(query,page,10)
                 .map(personMapper::toDto);
         return ResponseEntity.ok(new PagedModel<>(dto));
     }
 
     @GetMapping("/{uuid}")
-    public ResponseEntity<PersonResponseDto> getPersonBiography(@PathVariable String uuid){
-        var dto = personMapper.toDto(personService.loadPersonByUUID(uuid));
+    public ResponseEntity<PersonResponseDto> getPerson(@PathVariable String uuid){
+        var id = UUID.fromString(uuid);
+        var dto = personMapper.toDto(personService.loadPersonByUUID(id));
         return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/{uuid}/biography")
-    public ResponseEntity<BiographyResponseDto> getPerson(@PathVariable String uuid){
-        return ResponseEntity.ok(personService.loadPersonBiographyByUUID(uuid));
+    public ResponseEntity<BiographyResponseDto> getPersonBiography(@PathVariable String uuid){
+        var id = UUID.fromString(uuid);
+        return ResponseEntity.ok(personService.loadPersonBiographyByUUID(id));
     }
 
     @PatchMapping("/me")
