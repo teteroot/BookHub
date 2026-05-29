@@ -14,5 +14,6 @@ public interface PersonService {
     BiographyResponseDto loadPersonBiographyByUUID(UUID uuid);
     void updatePerson(UUID id, Person person);
     List<Person> loadFavorites(UUID userId);
-    void addToFavorite(UUID userId, UUID targetPersonId);
+    void addToFavorites(UUID userId, UUID targetPersonId);
+    void removeFromFavorites(UUID userId, UUID targetPersonId);
 }

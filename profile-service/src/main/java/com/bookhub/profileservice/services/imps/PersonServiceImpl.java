@@ -66,7 +66,7 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional
-    public void addToFavorite(UUID userId, UUID targetPersonId) {
+    public void addToFavorites(UUID userId, UUID targetPersonId) {
         if (userId.equals(targetPersonId)){
             throw new SelfRequestException();
         }
@@ -78,6 +78,23 @@ public class PersonServiceImpl implements PersonService {
             throw new PersonAlreadyInFavoritesException();
         }
         person.getFavoriteAuthors().add(targetPerson);
+        personRepository.save(person);
+    }
+
+    @Override
+    @Transactional
+    public void removeFromFavorites(UUID userId, UUID targetPersonId) {
+        if (userId.equals(targetPersonId)){
+            throw new SelfRequestException();
+        }
+        var person = personRepository.findById(userId)
+                .orElseThrow(PersonNotFoundException::new);
+        var targetPerson = personRepository.findById(targetPersonId)
+                .orElseThrow(PersonNotFoundException::new);
+        if (!personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
+            throw new PersonNotFoundException();
+        }
+        person.getFavoriteAuthors().remove(targetPerson);
         personRepository.save(person);
     }
 

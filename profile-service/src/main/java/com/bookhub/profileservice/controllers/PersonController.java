@@ -28,7 +28,7 @@ public class PersonController {
     private final PersonMapper personMapper;
     private final PersonService personService;
 
-    @PostMapping("/")
+    @PostMapping
     public ResponseEntity<Void> createPerson(@RequestBody @Valid PersonCreateRequestDto personCreateRequestDto,
                                              BindingResult result){
         if (result.hasErrors()) throw new IncorrectRequestDataException(result);
@@ -42,23 +42,29 @@ public class PersonController {
         return ResponseEntity.ok(userDetails.getUserId().toString());
     }
 
-    @GetMapping("/favorite")
+    @GetMapping("/favorites")
     public ResponseEntity<List<PersonResponseDto>> getMyFavoritesAuthors(@AuthenticationPrincipal GatewayUserDetails userDetails){
-        System.out.println(userDetails.getUserId());
         var dto = personService.loadFavorites(userDetails.getUserId())
                 .stream().map(personMapper::toDto).toList();
         return ResponseEntity.ok(dto);
     }
 
-    @PostMapping("/favorite/{uuid}")
+    @PostMapping("/favorites/{uuid}")
     public ResponseEntity<Void> addToFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                                          @PathVariable UUID uuid){
-        personService.addToFavorite(userDetails.getUserId(),uuid);
+        personService.addToFavorites(userDetails.getUserId(),uuid);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @DeleteMapping("/favorites/{uuid}")
+    public ResponseEntity<Void> removeFromFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                               @PathVariable UUID uuid){
+        personService.removeFromFavorites(userDetails.getUserId(),uuid);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @GetMapping("/search")
-    public ResponseEntity<PagedModel<PersonResponseDto>> getMyUUID(@RequestParam String query,
+    public ResponseEntity<PagedModel<PersonResponseDto>> searchPerson(@RequestParam String query,
                                                                    @RequestParam Integer page){
         var dto = personService.searchPersons(query,page,10)
                 .map(personMapper::toDto);
@@ -66,16 +72,14 @@ public class PersonController {
     }
 
     @GetMapping("/{uuid}")
-    public ResponseEntity<PersonResponseDto> getPerson(@PathVariable String uuid){
-        var id = UUID.fromString(uuid);
-        var dto = personMapper.toDto(personService.loadPersonByUUID(id));
+    public ResponseEntity<PersonResponseDto> getPerson(@PathVariable UUID uuid){
+        var dto = personMapper.toDto(personService.loadPersonByUUID(uuid));
         return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/{uuid}/biography")
-    public ResponseEntity<BiographyResponseDto> getPersonBiography(@PathVariable String uuid){
-        var id = UUID.fromString(uuid);
-        return ResponseEntity.ok(personService.loadPersonBiographyByUUID(id));
+    public ResponseEntity<BiographyResponseDto> getPersonBiography(@PathVariable UUID uuid){
+        return ResponseEntity.ok(personService.loadPersonBiographyByUUID(uuid));
     }
 
     @PatchMapping("/me")
