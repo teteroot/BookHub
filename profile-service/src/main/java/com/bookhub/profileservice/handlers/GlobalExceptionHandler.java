@@ -2,6 +2,7 @@ package com.bookhub.profileservice.handlers;
 
 
 import com.bookhub.profileservice.dtos.responses.ErrorResponseDto;
+import com.bookhub.profileservice.exceptions.BadRequestException;
 import com.bookhub.profileservice.exceptions.NotFoundException;
 import com.bookhub.profileservice.exceptions.extensions.IncorrectRequestDataException;
 import org.springframework.http.HttpStatus;
@@ -25,4 +26,17 @@ public class GlobalExceptionHandler {
         var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
     }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponseDto> handleBadRequestException(BadRequestException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
 }
