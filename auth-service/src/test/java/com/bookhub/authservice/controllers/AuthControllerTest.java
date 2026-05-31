@@ -1,5 +1,6 @@
 package com.bookhub.authservice.controllers;
 
+import com.bookhub.authservice.config.Bucket4jConfig;
 import com.bookhub.authservice.config.SecurityConfig;
 import com.bookhub.authservice.dtos.requests.LoginRequestDto;
 import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
@@ -9,30 +10,37 @@ import com.bookhub.authservice.exceptions.extensions.RefreshTokenExpireException
 import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
 import com.bookhub.authservice.models.RefreshToken;
 import com.bookhub.authservice.security.JwtCore;
-import com.bookhub.authservice.security.TokenFilter;
+import com.bookhub.authservice.security.filters.ConsumeTokenFilter;
+import com.bookhub.authservice.security.filters.GatewayVerificationFilter;
+import com.bookhub.authservice.security.filters.TokenFilter;
 import com.bookhub.authservice.services.AuthService;
 import com.bookhub.authservice.services.UserService;
 import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
 import java.util.UUID;
 
 import static org.mockito.Mockito.*;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class})
+@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class, Bucket4jConfig.class, GatewayVerificationFilter.class, ConsumeTokenFilter.class})
 class AuthControllerTest {
 
     @MockitoBean
@@ -42,9 +50,23 @@ class AuthControllerTest {
     private AuthService authService;
 
     @Autowired
+    private WebApplicationContext webApplicationContext;
+
+    @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
+
+    @Value("${security.origin.gateway.secret}")
+    private String gatewaySecret;
+
+    @BeforeEach
+    void setUp() {
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .defaultRequest(get("/").header("X-Gateway-Secret", gatewaySecret))
+                .build();
+    }
+
 
     @Test
     void testRegisterWithIncorrectEmail() throws Exception {
