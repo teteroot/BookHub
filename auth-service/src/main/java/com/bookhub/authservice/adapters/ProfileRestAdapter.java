@@ -22,10 +22,12 @@ public class ProfileRestAdapter extends RestAdapter implements ProfileProvisioni
     @Value("${services.profile-service.url}")
     private String baseUrl;
     @Override
-    public void createPerson(PersonDataRequestDto personData) {
+    public void createPerson(String id, PersonDataRequestDto personData) {
         restClient.post()
-                .uri("%s/api/v1/persons/".formatted(baseUrl))
+                .uri("%s/api/v1/persons".formatted(baseUrl))
                 .header(GATEWAY_VERIFICATION_HEADER_NAME,GATEWAY_VERIFICATION_SECRET)
+                .header(USER_ID_HEADER_NAME, id)
+                .header(USER_ROLE_HEADER_NAME, personData.getRole().name())
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(personData)
                 .retrieve()

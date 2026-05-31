@@ -7,16 +7,12 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 
 @AllArgsConstructor
 @NoArgsConstructor
 @Data
 public class PersonDataRequestDto {
-
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    private UUID id;
 
     private String firstName;
 

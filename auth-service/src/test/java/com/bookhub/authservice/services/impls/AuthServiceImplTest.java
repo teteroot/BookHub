@@ -69,7 +69,7 @@ class AuthServiceImplTest {
                 () -> authService.registerNewUser("","",UserRole.READER,new PersonDataRequestDto())
         );
         verify(registerService,times(1)).register(anyString(),anyString(),any(UserRole.class));
-        verify(profileProvisioningPort,times(1)).createPerson(any(PersonDataRequestDto.class));
+        verify(profileProvisioningPort,times(1)).createPerson(anyString(),any(PersonDataRequestDto.class));
     }
 
 
