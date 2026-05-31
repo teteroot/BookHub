@@ -1,5 +1,6 @@
 package com.bookhub.profileservice.services;
 
+import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.models.Person;
 import org.springframework.data.domain.Page;
@@ -12,7 +13,7 @@ public interface PersonService {
     Page<Person> searchPersons(String query, int page, int size);
     Person loadPersonByUUID(UUID uuid);
     BiographyResponseDto loadPersonBiographyByUUID(UUID uuid);
-    void updatePerson(UUID id, Person person);
+    void updatePerson(UUID id, PersonUpdateRequestDto person);
     List<Person> loadFavorites(UUID userId);
     void addToFavorites(UUID userId, UUID targetPersonId);
     void removeFromFavorites(UUID userId, UUID targetPersonId);

@@ -89,8 +89,7 @@ public class PersonController {
     @PatchMapping("/me")
     public ResponseEntity<Void> updatePerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto){
-        var person = personMapper.toPerson(personUpdateRequestDto);
-        personService.updatePerson(userDetails.getUserId(),person);
+        personService.updatePerson(userDetails.getUserId(),personUpdateRequestDto);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }
