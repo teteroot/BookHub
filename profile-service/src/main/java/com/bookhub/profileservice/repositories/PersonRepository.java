@@ -5,6 +5,7 @@ import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.models.Person;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.stereotype.Repository;
@@ -41,6 +42,24 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            """)
     Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
                                                                       Pageable pageable);
+
+    @Modifying
+    @Query(value = """
+          INSERT
+          INTO person_favorites(marked_as_favorite_by_id,favorite_author_id)
+          VALUES (:id,:authorId);
+          """, nativeQuery = true)
+    void addPersonToFavoriteAuthors(UUID id, UUID authorId);
+
+    @Modifying
+    @Query(value = """
+          DELETE
+          FROM person_favorites
+          WHERE marked_as_favorite_by_id = :id
+          AND favorite_author_id = :authorId;
+          """, nativeQuery = true)
+    void removePersonFromPersonFavoritesAuthors(UUID id, UUID authorId);
+
 
     Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
 }

@@ -74,15 +74,13 @@ public class PersonServiceImpl implements PersonService {
         if (userId.equals(targetPersonId)){
             throw new SelfRequestException();
         }
-        var person = personRepository.findById(userId)
-                .orElseThrow(PersonNotFoundException::new);
-        var targetPerson = personRepository.findById(targetPersonId)
-                .orElseThrow(PersonNotFoundException::new);
+        if (!personRepository.existsById(userId) || !personRepository.existsById(targetPersonId)){
+            throw new PersonNotFoundException();
+        }
         if (personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
             throw new PersonAlreadyInFavoritesException();
         }
-        person.getFavoriteAuthors().add(targetPerson);
-        personRepository.save(person);
+        personRepository.addPersonToFavoriteAuthors(userId, targetPersonId);
     }
 
     @Override
@@ -91,15 +89,13 @@ public class PersonServiceImpl implements PersonService {
         if (userId.equals(targetPersonId)){
             throw new SelfRequestException();
         }
-        var person = personRepository.findById(userId)
-                .orElseThrow(PersonNotFoundException::new);
-        var targetPerson = personRepository.findById(targetPersonId)
-                .orElseThrow(PersonNotFoundException::new);
+        if (!personRepository.existsById(userId) || !personRepository.existsById(targetPersonId)){
+            throw new PersonNotFoundException();
+        }
         if (!personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
             throw new PersonNotFoundException();
         }
-        person.getFavoriteAuthors().remove(targetPerson);
-        personRepository.save(person);
+        personRepository.removePersonFromPersonFavoritesAuthors(userId, targetPersonId);
     }
 
     @Override
