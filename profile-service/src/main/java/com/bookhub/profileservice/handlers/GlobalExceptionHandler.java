@@ -4,9 +4,9 @@ package com.bookhub.profileservice.handlers;
 import com.bookhub.profileservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.profileservice.exceptions.BadRequestException;
 import com.bookhub.profileservice.exceptions.NotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.IncorrectRequestDataException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -15,9 +15,16 @@ import java.time.Instant;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(IncorrectRequestDataException.class)
-    public ResponseEntity<ErrorResponseDto> handleIncorrectRequestDataException(IncorrectRequestDataException e) {
-        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponseDto> handleMethodArgumentNotValidException(MethodArgumentNotValidException e) {
+        var result = e.getBindingResult();
+        StringBuilder errorMessage = new StringBuilder();
+        result.getFieldErrors()
+                .forEach((error) -> {
+                    errorMessage.append(error.getDefaultMessage());
+                    errorMessage.append("; ");
+                });
+        var errorResponse = new ErrorResponseDto(errorMessage.toString(), Instant.now(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 

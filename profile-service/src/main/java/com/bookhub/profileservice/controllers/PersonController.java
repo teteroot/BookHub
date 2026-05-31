@@ -4,7 +4,6 @@ import com.bookhub.profileservice.dtos.requests.PersonCreateRequestDto;
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.dtos.responses.PersonResponseDto;
-import com.bookhub.profileservice.exceptions.extensions.IncorrectRequestDataException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.security.GatewayUserDetails;
 import com.bookhub.profileservice.services.PersonService;
@@ -14,7 +13,6 @@ import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,9 +27,7 @@ public class PersonController {
     private final PersonService personService;
 
     @PostMapping
-    public ResponseEntity<Void> createPerson(@RequestBody @Valid PersonCreateRequestDto personCreateRequestDto,
-                                             BindingResult result){
-        if (result.hasErrors()) throw new IncorrectRequestDataException(result);
+    public ResponseEntity<Void> createPerson(@RequestBody @Valid PersonCreateRequestDto personCreateRequestDto){
         var person = personMapper.toPerson(personCreateRequestDto);
         personService.createPerson(person);
         return new ResponseEntity<>(HttpStatus.CREATED);
@@ -73,7 +69,7 @@ public class PersonController {
 
     @GetMapping("/search")
     public ResponseEntity<PagedModel<PersonResponseDto>> searchPerson(@RequestParam String query,
-                                                                   @RequestParam Integer page){
+                                                                   @RequestParam(defaultValue = "0",required = false) Integer page){
         var dto = personService.searchPersons(query,page,10)
                 .map(personMapper::toDto);
         return ResponseEntity.ok(new PagedModel<>(dto));
@@ -92,9 +88,7 @@ public class PersonController {
 
     @PatchMapping("/me")
     public ResponseEntity<Void> updatePerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                               @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto,
-                                               BindingResult result){
-        if (result.hasErrors()) throw new IncorrectRequestDataException(result);
+                                               @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto){
         var person = personMapper.toPerson(personUpdateRequestDto);
         personService.updatePerson(userDetails.getUserId(),person);
         return new ResponseEntity<>(HttpStatus.OK);
