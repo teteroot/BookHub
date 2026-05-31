@@ -51,7 +51,7 @@ public class PersonServiceImpl implements PersonService {
     @Transactional
     public void updatePerson(UUID id, Person updatedPerson) {
         var person = personRepository.findById(id)
-                .orElseThrow(BiographyNotFoundException::new);
+                .orElseThrow(PersonNotFoundException::new);
         updatedPerson.setId(id);
         updatedPerson.setDateOfRegistration(person.getDateOfRegistration());
         personRepository.save(updatedPerson);
