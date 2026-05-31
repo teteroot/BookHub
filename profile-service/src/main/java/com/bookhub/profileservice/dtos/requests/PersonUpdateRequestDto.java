@@ -1,7 +1,6 @@
 package com.bookhub.profileservice.dtos.requests;
 
 import com.bookhub.profileservice.enums.UserRole;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PastOrPresent;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
@@ -20,7 +19,6 @@ public class PersonUpdateRequestDto {
     @Size(min = 2, max = 20, message = "Last name must be between 2 and 20 characters")
     private String lastName;
 
-    @NotNull(message = "Date of birth must not be null")
     @PastOrPresent(message = "Date of birth must be in the past or present")
     private Instant dateOfBirth;
 

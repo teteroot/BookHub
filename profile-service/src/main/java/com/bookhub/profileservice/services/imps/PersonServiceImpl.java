@@ -1,11 +1,10 @@
 package com.bookhub.profileservice.services.imps;
 
+import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
-import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
+import com.bookhub.profileservice.exceptions.extensions.*;
+import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.PersonService;
@@ -25,10 +24,15 @@ import java.util.UUID;
 public class PersonServiceImpl implements PersonService {
 
     private final PersonRepository personRepository;
+    private final PersonMapper personMapper;
 
     @Override
     @Transactional
-    public void createPerson(Person person) {
+    public void createPerson(UUID uuid,Person person) {
+        if (personRepository.existsById(uuid)){
+            throw new PersonAlreadyExistsException();
+        }
+        person.setId(uuid);
         person.setDateOfRegistration(Instant.now());
         personRepository.save(person);
     }
@@ -49,12 +53,11 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional
-    public void updatePerson(UUID id, Person updatedPerson) {
+    public void updatePerson(UUID id, PersonUpdateRequestDto updatedPerson) {
         var person = personRepository.findById(id)
                 .orElseThrow(PersonNotFoundException::new);
-        updatedPerson.setId(id);
-        updatedPerson.setDateOfRegistration(person.getDateOfRegistration());
-        personRepository.save(updatedPerson);
+        personMapper.updatePerson(person, updatedPerson);
+        personRepository.save(person);
     }
 
     @Override
