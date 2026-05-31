@@ -1,6 +1,7 @@
-package com.bookhub.authservice.security;
+package com.bookhub.authservice.security.filters;
 
 import com.bookhub.authservice.enums.UserRole;
+import com.bookhub.authservice.security.GatewayUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

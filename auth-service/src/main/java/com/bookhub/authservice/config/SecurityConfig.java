@@ -1,7 +1,8 @@
 package com.bookhub.authservice.config;
 
-import com.bookhub.authservice.security.GatewayVerificationFilter;
-import com.bookhub.authservice.security.TokenFilter;
+import com.bookhub.authservice.security.filters.ConsumeTokenFilter;
+import com.bookhub.authservice.security.filters.GatewayVerificationFilter;
+import com.bookhub.authservice.security.filters.TokenFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,6 +26,8 @@ public class SecurityConfig {
 
     private final TokenFilter tokenFilter;
     private final GatewayVerificationFilter gatewayVerificationFilter;
+    private final ConsumeTokenFilter consumeTokenFilter;
+
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
@@ -38,7 +41,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/auth/**").permitAll()
                         .anyRequest().fullyAuthenticated()
 
-                ).addFilterBefore(gatewayVerificationFilter, UsernamePasswordAuthenticationFilter.class)
+                ).addFilterBefore(consumeTokenFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(gatewayVerificationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(tokenFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

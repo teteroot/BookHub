@@ -1,4 +1,4 @@
-package com.bookhub.authservice.security;
+package com.bookhub.authservice.security.filters;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
