@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface PersonService {
-    void createPerson(Person person);
+    void createPerson(UUID uuid,Person person);
     Page<Person> searchPersons(String query, int page, int size);
     Person loadPersonByUUID(UUID uuid);
     BiographyResponseDto loadPersonBiographyByUUID(UUID uuid);

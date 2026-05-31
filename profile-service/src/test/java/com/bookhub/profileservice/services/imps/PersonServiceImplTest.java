@@ -8,6 +8,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.Mockito.*;
 
@@ -23,7 +25,7 @@ class PersonServiceImplTest {
 
     @Test
     void testSuccessfulCreatePerson() {
-        assertDoesNotThrow(()-> personService.createPerson(new Person()));
+        assertDoesNotThrow(()-> personService.createPerson(UUID.randomUUID(),new Person()));
         verify(personRepository, times(1)).save(any(Person.class));
     }
 }

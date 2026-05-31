@@ -3,10 +3,7 @@ package com.bookhub.profileservice.services.imps;
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
-import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
+import com.bookhub.profileservice.exceptions.extensions.*;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.repositories.PersonRepository;
@@ -31,7 +28,11 @@ public class PersonServiceImpl implements PersonService {
 
     @Override
     @Transactional
-    public void createPerson(Person person) {
+    public void createPerson(UUID uuid,Person person) {
+        if (personRepository.existsById(uuid)){
+            throw new PersonAlreadyExistsException();
+        }
+        person.setId(uuid);
         person.setDateOfRegistration(Instant.now());
         personRepository.save(person);
     }
