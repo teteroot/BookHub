@@ -1,21 +1,19 @@
 package com.bookhub.profileservice.dtos.requests;
 
 import com.bookhub.profileservice.enums.UserRole;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PastOrPresent;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
 public class PersonCreateRequestDto {
-
-    @NotNull(message = "ID must not be null")
-    private UUID id;
 
     @Size(min = 2, max = 20, message = "First name must be between 2 and 20 characters")
     private String firstName;

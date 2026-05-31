@@ -27,9 +27,10 @@ public class PersonController {
     private final PersonService personService;
 
     @PostMapping
-    public ResponseEntity<Void> createPerson(@RequestBody @Valid PersonCreateRequestDto personCreateRequestDto){
+    public ResponseEntity<Void> createPerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                             @RequestBody @Valid PersonCreateRequestDto personCreateRequestDto){
         var person = personMapper.toPerson(personCreateRequestDto);
-        personService.createPerson(person);
+        personService.createPerson(userDetails.getUserId(),person);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
@@ -89,8 +90,7 @@ public class PersonController {
     @PatchMapping("/me")
     public ResponseEntity<Void> updatePerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto){
-        var person = personMapper.toPerson(personUpdateRequestDto);
-        personService.updatePerson(userDetails.getUserId(),person);
+        personService.updatePerson(userDetails.getUserId(),personUpdateRequestDto);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 }

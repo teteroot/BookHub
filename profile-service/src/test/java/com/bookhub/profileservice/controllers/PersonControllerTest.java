@@ -18,7 +18,6 @@ import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
@@ -59,8 +58,7 @@ class PersonControllerTest {
     @Test
     void testCreateIncorrectPerson() throws Exception {
         PersonCreateRequestDto dto = new PersonCreateRequestDto(
-                null,
-                "name", "lastName",
+                "", "lastName",
                 Instant.now(),"",
                 UserRole.READER
         );
@@ -68,13 +66,12 @@ class PersonControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("ID must not be null; "));
+                .andExpect(jsonPath("$.message").value("First name must be between 2 and 20 characters; "));
     }
 
     @Test
     void testSuccessfulCreatePerson() throws Exception {
         PersonCreateRequestDto dto = new PersonCreateRequestDto(
-                UUID.randomUUID(),
                 "name", "lastName",
                 Instant.now(),"",
                 UserRole.READER
