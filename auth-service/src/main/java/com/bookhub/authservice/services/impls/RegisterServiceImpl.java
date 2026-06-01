@@ -35,4 +35,10 @@ public class RegisterServiceImpl implements RegisterService {
         return savedUser.getId();
     }
 
+    @Override
+    @Transactional
+    public void rejectRegistration(UUID uuid) {
+        userRepository.deleteById(uuid);
+    }
+
 }

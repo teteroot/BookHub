@@ -6,4 +6,5 @@ import java.util.UUID;
 
 public interface RegisterService {
     UUID register(String email, String password, UserRole role);
+    void rejectRegistration(UUID uuid);
 }

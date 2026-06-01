@@ -20,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.UUID;
 
@@ -46,11 +47,16 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
-    @Transactional
     public void registerNewUser(String email, String password, UserRole role, PersonDataRequestDto personDataRequestDto) {
         var uuid = registerService.register(email,password,role);
         personDataRequestDto.setRole(role);
-        profileProvisioningPort.createPerson(String.valueOf(uuid),personDataRequestDto);
+        try {
+            profileProvisioningPort.createPerson(String.valueOf(uuid),personDataRequestDto);
+        } catch (ResponseStatusException e){
+            log.info("Error, rejecting user registration");
+            registerService.rejectRegistration(uuid);
+            throw e;
+        }
     }
 
     @Override
