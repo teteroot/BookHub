@@ -21,6 +21,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -71,6 +72,20 @@ class AuthServiceImplTest {
         verify(registerService,times(1)).register(anyString(),anyString(),any(UserRole.class));
         verify(profileProvisioningPort,times(1)).createPerson(anyString(),any(PersonDataRequestDto.class));
     }
+    @Test
+    void testRegisterNewUserWithPersonServiceError() {
+        var id = UUID.randomUUID();
+        doThrow(ResponseStatusException.class)
+                .when(profileProvisioningPort).createPerson(anyString(),any(PersonDataRequestDto.class));
+        when(registerService.register(anyString(),anyString(),any(UserRole.class)))
+                .thenReturn(id);
+        assertThrows(ResponseStatusException.class,
+                () ->authService.registerNewUser("","",UserRole.READER,new PersonDataRequestDto()));
+        verify(registerService,times(1)).register(anyString(),anyString(),any(UserRole.class));
+        verify(profileProvisioningPort,times(1)).createPerson(eq(id.toString()),any(PersonDataRequestDto.class));
+        verify(registerService).rejectRegistration(id);
+    }
+
 
 
 
