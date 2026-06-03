@@ -4,6 +4,6 @@ import com.bookhub.profileservice.exceptions.NotFoundException;
 
 public class BiographyNotFoundException extends NotFoundException {
     public BiographyNotFoundException() {
-        super("Biography Not Found");
+        super("Biography not found");
     }
 }
