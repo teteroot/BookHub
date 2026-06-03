@@ -1,7 +1,6 @@
-package security;
+package com.bookhub.profileservice.security;
 
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.security.GatewayUserDetails;
 import lombok.Getter;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.boot.test.context.TestComponent;

@@ -25,7 +25,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import security.TestUserDetailsService;
+import com.bookhub.profileservice.security.TestUserDetailsService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
@@ -90,7 +90,7 @@ class PersonControllerTest {
                 Instant.now(),"",
                 UserRole.READER
         );
-        when(personMapper.toPerson(any(PersonCreateRequestDto.class))).thenReturn(new Person());
+        when(personMapper.toPerson(dto)).thenReturn(new Person());
         mockMvc.perform(post("/api/v1/persons")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
