@@ -37,7 +37,6 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            SELECT p
            FROM Person p
            WHERE p.role=:role
-           AND SIZE(p.markedAsFavoriteBy) > 0
            ORDER BY SIZE(p.markedAsFavoriteBy) DESC
            """)
     Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
