@@ -25,7 +25,7 @@ public class GatewayUserDetails implements UserDetails {
     @Override
     @NullMarked
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(role::toString);
+        return List.of(() -> "ROLE_%s".formatted(role));
     }
 
     @Override
