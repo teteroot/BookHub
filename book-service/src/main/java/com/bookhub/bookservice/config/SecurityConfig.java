@@ -34,6 +34,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers("/api/v1/books/**").permitAll()
                         .anyRequest().fullyAuthenticated()
 
                 ).addFilterBefore(gatewayVerificationFilter, UsernamePasswordAuthenticationFilter.class)
