@@ -5,6 +5,7 @@ import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.security.GatewayUserDetails;
 import com.bookhub.bookservice.services.BookManagementService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +31,7 @@ public class BookController {
 
     @PostMapping
     @PreAuthorize("hasRole('AUTHOR')")
-    public ResponseEntity<Void> createBook(@RequestBody BookCreateRequestDto bookCreateRequestDto,
+    public ResponseEntity<Void> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         var book = bookMapper.toBook(bookCreateRequestDto);
         bookManagementService.createBook(book,userDetails.getUserId());
