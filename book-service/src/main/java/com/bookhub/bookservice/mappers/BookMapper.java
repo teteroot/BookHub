@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.mappers;
 
 import com.bookhub.bookservice.dtos.requests.BookCreateRequestDto;
+import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.models.Book;
 import org.mapstruct.Mapper;
 import org.mapstruct.MappingConstants;
@@ -10,4 +11,6 @@ import org.mapstruct.ReportingPolicy;
 public interface BookMapper {
 
     Book toBook(BookCreateRequestDto bookCreateRequestDto);
+
+    BookResponseDto toDto(Book book);
 }
