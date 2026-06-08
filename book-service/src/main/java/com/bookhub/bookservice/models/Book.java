@@ -36,6 +36,12 @@ public class Book {
     @Column(name = "title", nullable = false)
     private String title;
 
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "age_limit")
+    private Integer ageLimit;
+
     @Column(name = "author_id", nullable = false, updatable = false)
     private UUID authorId;
 

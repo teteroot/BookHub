@@ -1,6 +1,8 @@
 CREATE TABLE books (
     id UUID PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
+    description TEXT,
+    age_limit INTEGER NOT NULL DEFAULT 0,
     author_id UUID NOT NULL,
     status VARCHAR(20) NOT NULL,
     date_of_publishing TIMESTAMPTZ,
