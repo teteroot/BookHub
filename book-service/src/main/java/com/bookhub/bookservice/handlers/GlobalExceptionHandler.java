@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.handlers;
 
 import com.bookhub.bookservice.dtos.responses.ErrorResponseDto;
+import com.bookhub.bookservice.exceptions.BadRequestException;
 import com.bookhub.bookservice.exceptions.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,5 +31,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleNotFoundException(NotFoundException e) {
         var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 404);
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+    }
+
+    @ExceptionHandler(BadRequestException.class)
+    public ResponseEntity<ErrorResponseDto> handleBadRequestException(BadRequestException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
     }
 }

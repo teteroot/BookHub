@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
+import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.repositories.BookRepository;
@@ -24,6 +25,9 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     public void createBook(Book book, UUID authorId) {
+        if (bookRepository.existsByTitleAndAuthorId(book.getTitle(), authorId)) {
+            throw new BookAlreadyExistException(book.getTitle());
+        }
         book.setAuthorId(authorId);
         book.setStatus(BookStatus.DRAFT);
         bookRepository.save(book);
