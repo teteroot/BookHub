@@ -7,7 +7,9 @@ import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -24,12 +26,14 @@ public class BookManagementServiceImpl implements BookManagementService {
     }
 
     @Override
+    @Transactional
     public void createBook(Book book, UUID authorId) {
-        if (bookRepository.existsByTitleAndAuthorId(book.getTitle(), authorId)) {
-            throw new BookAlreadyExistException(book.getTitle());
-        }
         book.setAuthorId(authorId);
         book.setStatus(BookStatus.DRAFT);
-        bookRepository.save(book);
+        try {
+            bookRepository.saveAndFlush(book);
+        } catch (DataIntegrityViolationException e) {
+            throw new BookAlreadyExistException(book.getTitle());
+        }
     }
 }

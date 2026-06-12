@@ -6,7 +6,6 @@ CREATE TABLE books (
     author_id UUID NOT NULL,
     status VARCHAR(20) NOT NULL,
     date_of_publishing TIMESTAMPTZ,
-    count_of_pages INTEGER NOT NULL DEFAULT 0,
     s3_archive_path VARCHAR(512),
     s3_cover_path VARCHAR(512),
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -16,6 +15,7 @@ CREATE TABLE books (
 
 CREATE INDEX idx_books_author_id ON books (author_id);
 CREATE INDEX idx_books_status ON books (status);
+CREATE UNIQUE INDEX uq_books_title_author ON books(title, author_id);
 
 CREATE TABLE book_pages (
     id UUID PRIMARY KEY,

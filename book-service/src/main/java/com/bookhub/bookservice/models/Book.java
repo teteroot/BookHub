@@ -52,10 +52,6 @@ public class Book {
     @Column(name = "date_of_publishing")
     private Instant dateOfPublishing;
 
-    @Column(name = "count_of_pages", nullable = false)
-    @Builder.Default
-    private Integer countOfPages = 0;
-
     @Column(name = "s3_archive_path", length = 512)
     private String s3ArchivePath;
 
@@ -86,13 +82,11 @@ public class Book {
     public void addPage(Page page) {
         pages.add(page);
         page.setBook(this);
-        this.countOfPages = pages.size();
     }
 
     public void removePage(Page page) {
         pages.remove(page);
         page.setBook(null);
-        this.countOfPages = pages.size();
     }
 
     @Override
