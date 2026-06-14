@@ -6,4 +6,6 @@ import java.util.UUID;
 public interface BookStorageService {
 
     String updateContent(UUID bookId, InputStream content, Long size);
+
+    void removeContent(String path);
 }

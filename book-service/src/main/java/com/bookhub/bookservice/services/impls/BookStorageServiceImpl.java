@@ -1,5 +1,6 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.services.BookStorageService;
 import io.awspring.cloud.s3.ObjectMetadata;
 import io.awspring.cloud.s3.S3Template;
@@ -27,15 +28,27 @@ public class BookStorageServiceImpl implements BookStorageService {
     @Override
     public String updateContent(UUID bookId, InputStream content, Long size) {
         var path = DESTINATION.formatted(bookId);
-        s3Template.upload(bucketName,
-                path,
-                content,
-                ObjectMetadata.builder()
-                        .contentType(contentType)
-                        .contentLength(size)
-                        .build()
-                );
+        try {
+            s3Template.upload(bucketName,
+                    path,
+                    content,
+                    ObjectMetadata.builder()
+                            .contentType(contentType)
+                            .contentLength(size)
+                            .build()
+            );
+        } catch (RuntimeException e) {
+            throw new ContentSaveException();
+        }
         return path;
     }
 
+    @Override
+    public void removeContent(String path) {
+        try {
+            s3Template.deleteObject(bucketName, path);
+        } catch (RuntimeException e) {
+            throw new ContentSaveException();
+        }
+    }
 }

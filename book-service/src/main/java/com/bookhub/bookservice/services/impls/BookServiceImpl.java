@@ -2,11 +2,13 @@ package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
+import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.services.BookManagementService;
 import com.bookhub.bookservice.services.BookService;
 import com.bookhub.bookservice.services.BookStorageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -37,9 +39,16 @@ public class BookServiceImpl implements BookService {
         if (!book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
+        var oldPath = book.getS3ArchivePath();
         var path = bookStorageService.updateContent(bookId, content, size);
-        bookManagementService.updateS3ArchivePath(bookId,path);
+        if (oldPath == null) {
+            try {
+                bookManagementService.updateS3ArchivePath(bookId,path);
+            } catch (DataAccessException e) {
+                bookStorageService.removeContent(path);
+                throw new ContentSaveException();
+            }
+        }
     }
-
 
 }
