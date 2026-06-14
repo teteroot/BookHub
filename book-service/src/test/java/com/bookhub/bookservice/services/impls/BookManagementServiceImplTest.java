@@ -1,6 +1,5 @@
 package com.bookhub.bookservice.services.impls;
 
-import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
@@ -47,12 +46,7 @@ class BookManagementServiceImplTest {
     @Test
     void testSuccessfulCreateBook() {
         var book = new Book();
-        var authorId = UUID.randomUUID();
-
-        bookManagementService.createBook(book, authorId);
-
-        assertEquals(BookStatus.DRAFT, book.getStatus());
-        assertEquals(authorId, book.getAuthorId());
+        bookManagementService.createBook(book);
         verify(bookRepository).saveAndFlush(book);
     }
 
@@ -62,7 +56,7 @@ class BookManagementServiceImplTest {
         when(bookRepository.saveAndFlush(any(Book.class))).thenThrow(DataIntegrityViolationException.class);
 
         var ex = assertThrows(BookAlreadyExistException.class,
-                () -> bookManagementService.createBook(book, UUID.randomUUID()));
+                () -> bookManagementService.createBook(book));
 
         assertTrue(ex.getMessage().contains("title"));
     }

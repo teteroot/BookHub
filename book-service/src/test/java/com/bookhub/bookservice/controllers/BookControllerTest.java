@@ -10,7 +10,8 @@ import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.security.TestUserDetailsService;
-import com.bookhub.bookservice.services.BookManagementService;
+import com.bookhub.bookservice.services.BookService;
+import com.bookhub.bookservice.validators.PDFValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -43,8 +44,10 @@ class BookControllerTest {
     @MockitoBean
     private BookMapper bookMapper;
 
+    @MockitoBean PDFValidator pdfValidator;
+
     @MockitoBean
-    private BookManagementService bookManagementService;
+    private BookService bookService;
 
     @Autowired
     private MockMvc mockMvc;
@@ -127,7 +130,7 @@ class BookControllerTest {
         );
 
         doThrow(new BookAlreadyExistException("book_title"))
-                .when(bookManagementService).createBook(any(), any());
+                .when(bookService).createBook(any(), any());
         mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -140,7 +143,7 @@ class BookControllerTest {
     void testSuccessfulGetBook() throws Exception {
         var uuid = UUID.randomUUID();
         var book = Book.builder().id(uuid).build();
-        when(bookManagementService.loadBookByUUID(uuid))
+        when(bookService.loadBookByUUID(uuid))
                 .thenReturn(book);
         when(bookMapper.toDto(book))
                 .thenReturn(new BookResponseDto(
@@ -155,7 +158,7 @@ class BookControllerTest {
     @Test
     void testGetNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookManagementService.loadBookByUUID(uuid))
+        when(bookService.loadBookByUUID(uuid))
                 .thenThrow(new BookNotFoundException());
         mockMvc.perform(get("/api/v1/books/{uuid}", uuid))
                 .andExpect(status().isNotFound())
