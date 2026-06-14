@@ -37,8 +37,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/books/**").permitAll()
                         .anyRequest().fullyAuthenticated()
 
-                ).addFilterBefore(gatewayVerificationFilter, UsernamePasswordAuthenticationFilter.class)
-                .addFilterBefore(headerFilter, UsernamePasswordAuthenticationFilter.class);
+                ).addFilterBefore(headerFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(gatewayVerificationFilter, HeaderFilter.class);
         return http.build();
     }
 
