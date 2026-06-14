@@ -27,6 +27,7 @@ dependencies {
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
+	implementation("org.apache.tika:tika-core:3.3.1")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
