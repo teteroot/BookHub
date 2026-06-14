@@ -1,6 +1,5 @@
 package com.bookhub.bookservice.services.impls;
 
-import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
@@ -27,13 +26,20 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     @Transactional
-    public void createBook(Book book, UUID authorId) {
-        book.setAuthorId(authorId);
-        book.setStatus(BookStatus.DRAFT);
+    public void createBook(Book book) {
         try {
             bookRepository.saveAndFlush(book);
         } catch (DataIntegrityViolationException e) {
             throw new BookAlreadyExistException(book.getTitle());
         }
     }
+
+    @Override
+    @Transactional
+    public void updateS3ArchivePath(UUID bookId, String path) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.setS3ArchivePath(path);
+        bookRepository.save(book);
+    }
+
 }
