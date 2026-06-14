@@ -7,14 +7,17 @@ spring:
     password: root
   cloud:
     aws:
-      region:
-        static: us-east-1
-        s3:
-          endpoint: http://localhost:9000
-        credentials:
-          access-key: minioadmin
-          secret-key: minioadmin
-        path-style-access: true
+
+      s3:
+        endpoint: http://localhost:9000
+        path-style-access-enabled: true
+        region: us-east-1
+      credentials:
+        access-key: minioadmin
+        secret-key: minioadmin
+
+    bucket-name: pdf-bucket
+    content-type: application/pdf
 server:
   port: 8002
 security:
