@@ -5,6 +5,16 @@ spring:
     url: jdbc:postgresql://localhost:5430/Book
     username: root
     password: root
+  cloud:
+    aws:
+      region:
+        static: us-east-1
+        s3:
+          endpoint: http://localhost:9000
+        credentials:
+          access-key: minioadmin
+          secret-key: minioadmin
+        path-style-access: true
 server:
   port: 8002
 security:
