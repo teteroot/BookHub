@@ -8,7 +8,6 @@ import com.bookhub.bookservice.services.BookManagementService;
 import com.bookhub.bookservice.services.BookService;
 import com.bookhub.bookservice.services.BookStorageService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import java.io.InputStream;
@@ -44,7 +43,7 @@ public class BookServiceImpl implements BookService {
         if (oldPath == null) {
             try {
                 bookManagementService.updateS3ArchivePath(bookId,path);
-            } catch (DataAccessException e) {
+            } catch (RuntimeException e) {
                 bookStorageService.removeContent(path);
                 throw new ContentSaveException();
             }
