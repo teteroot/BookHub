@@ -9,5 +9,5 @@ public interface BookManagementService {
     Book loadBookByUUID(UUID uuid);
     void createBook(Book book);
 
-    void updateS3ArchivePath(UUID bookId, String path);
+    void addNewBookContent(UUID bookId, String path, int countOfPages);
 }

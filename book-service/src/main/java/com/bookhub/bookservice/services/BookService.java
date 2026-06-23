@@ -9,5 +9,5 @@ public interface BookService {
 
     Book loadBookByUUID(UUID uuid);
     void createBook(Book book, UUID authorId);
-    void updateBookContent(UUID bookId, UUID authorId, InputStream content, Long size);
+    void createBookContent(UUID bookId, UUID authorId, InputStream content, Long size);
 }

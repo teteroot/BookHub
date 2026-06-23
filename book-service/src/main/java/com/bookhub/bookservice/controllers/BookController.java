@@ -45,11 +45,11 @@ public class BookController {
 
     @PatchMapping(value = "/{uuid}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
-    public ResponseEntity<Void> updateBookContent(@PathVariable UUID uuid,
+    public ResponseEntity<Void> createBookContent(@PathVariable UUID uuid,
                                                   @RequestParam MultipartFile pdf,
                                                   @AuthenticationPrincipal GatewayUserDetails userDetails) throws IOException {
         pdfValidator.validateBookPDF(pdf);
-        bookService.updateBookContent(uuid,userDetails.getUserId(),pdf.getInputStream(),pdf.getSize());
+        bookService.createBookContent(uuid,userDetails.getUserId(),pdf.getInputStream(),pdf.getSize());
         return ResponseEntity.noContent().build();
     }
 

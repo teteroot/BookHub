@@ -1,8 +1,10 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.enums.SourceType;
 import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
+import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -36,9 +39,20 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     @Transactional
-    public void updateS3ArchivePath(UUID bookId, String path) {
+    public void addNewBookContent(UUID bookId, String path, int countOfPages) {
         var book = bookRepository.getReferenceById(bookId);
         book.setS3ArchivePath(path);
+        for (int i = 0; i < countOfPages; i++) {
+            var page = Page.builder()
+                    .book(book)
+                    .pageNumber(i+1)
+                    .sourceType(SourceType.ORIGINAL_PDF)
+                    .originalPageIndex(i)
+                    .createdAt(Instant.now())
+                    .updatedAt(Instant.now())
+                    .build();
+            book.addPage(page);
+        }
         bookRepository.save(book);
     }
 
