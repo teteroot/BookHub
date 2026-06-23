@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.validators.impls;
 
 import com.bookhub.bookservice.exceptions.extensions.PDFValidationException;
+import com.bookhub.bookservice.config.properties.StorageProperties;
 import com.bookhub.bookservice.validators.PDFValidator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -20,15 +21,16 @@ import java.util.Objects;
 public class PDFValidatorImpl implements PDFValidator {
 
     private final Detector detector;
+    private final StorageProperties storageProperties;
 
     @Override
     public void validateBookPDF(MultipartFile pdf) throws IOException {
-        if (pdf.isEmpty() || !Objects.equals(pdf.getContentType(), "application/pdf")) {
+        if (pdf.isEmpty() || !Objects.equals(pdf.getContentType(), storageProperties.getContentType())) {
             throw new PDFValidationException();
         }
         MediaType type =  detector.detect(new BufferedInputStream(pdf.getInputStream()), new Metadata());
 
-        if (!type.equals(MediaType.application("pdf"))){
+        if (!type.equals(MediaType.parse(storageProperties.getContentType()))){
             throw new PDFValidationException();
         }
     }
