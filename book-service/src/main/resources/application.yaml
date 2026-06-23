@@ -15,9 +15,10 @@ spring:
       credentials:
         access-key: minioadmin
         secret-key: minioadmin
-
-    bucket-name: pdf-bucket
-    content-type: application/pdf
+    storage:
+      bucket-name: pdf-bucket
+      content-type: application/pdf
+      destination: books/%s/content.pdf
 server:
   port: 8002
 security:
