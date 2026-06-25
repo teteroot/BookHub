@@ -14,12 +14,10 @@ public class PDFServiceImpl implements PDFService {
 
     @Override
     public Integer countOfPages(InputStream stream){
-        PDDocument document;
-        try {
-            document = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(stream));
+        try (PDDocument document = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(stream))){
+            return document.getNumberOfPages();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        return document.getNumberOfPages();
     }
 }
