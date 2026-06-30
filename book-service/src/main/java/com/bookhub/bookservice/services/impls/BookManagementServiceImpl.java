@@ -12,7 +12,6 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Instant;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -48,8 +47,6 @@ public class BookManagementServiceImpl implements BookManagementService {
                     .pageNumber(i+1)
                     .sourceType(SourceType.ORIGINAL_PDF)
                     .originalPageIndex(i)
-                    .createdAt(Instant.now())
-                    .updatedAt(Instant.now())
                     .build();
             book.addPage(page);
         }
