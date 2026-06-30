@@ -8,6 +8,9 @@ import com.bookhub.bookservice.services.BookService;
 import com.bookhub.bookservice.validators.PDFValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.UUID;
 
 @RestController
@@ -31,7 +35,21 @@ public class BookController {
     @GetMapping("/{uuid}")
     public ResponseEntity<BookResponseDto> getBook(@PathVariable UUID uuid){
         var book = bookService.loadBookByUUID(uuid);
-        return ResponseEntity.ok(bookMapper.toDto(book));
+        var countOfPages = bookService.getCountOfPages(uuid);
+        var dto = bookMapper.toDto(book,countOfPages);
+
+        return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/{uuid}/download")
+    public ResponseEntity<Resource> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                 @PathVariable UUID uuid){
+        UUID authorId = userDetails != null ? userDetails.getUserId() : null;
+        var bookStream = bookService.loadBookStream(authorId,uuid);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf")
+                .body(new InputStreamResource(bookStream));
     }
 
     @PostMapping
@@ -43,13 +61,15 @@ public class BookController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
-    @PatchMapping(value = "/{uuid}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PostMapping(value = "/{uuid}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> createBookContent(@PathVariable UUID uuid,
                                                   @RequestParam MultipartFile pdf,
                                                   @AuthenticationPrincipal GatewayUserDetails userDetails) throws IOException {
         pdfValidator.validateBookPDF(pdf);
-        bookService.createBookContent(uuid,userDetails.getUserId(),pdf.getInputStream(),pdf.getSize());
+        try(InputStream content = pdf.getInputStream()) {
+            bookService.createBookContent(uuid,userDetails.getUserId(),content,pdf.getSize());
+        }
         return ResponseEntity.noContent().build();
     }
 

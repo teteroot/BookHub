@@ -12,5 +12,5 @@ public interface BookMapper {
 
     Book toBook(BookCreateRequestDto bookCreateRequestDto);
 
-    BookResponseDto toDto(Book book);
+    BookResponseDto toDto(Book book, Integer countOfPages);
 }
