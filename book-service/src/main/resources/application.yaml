@@ -5,6 +5,10 @@ spring:
     url: jdbc:postgresql://localhost:5430/Book
     username: root
     password: root
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
   cloud:
     aws:
 
