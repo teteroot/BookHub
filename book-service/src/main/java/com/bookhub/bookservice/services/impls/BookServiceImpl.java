@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 
 import java.io.BufferedInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -28,10 +30,14 @@ public class BookServiceImpl implements BookService {
     @Override
     public InputStream loadBookStream(UUID authorId, UUID bookId) {
         var book = bookManagementService.loadBookByUUID(bookId);
+        var pages = bookManagementService.loadBookPagesByUUID(bookId);
         if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
-        return bookStorageService.loadContent(book.getS3ArchivePath());
+
+        List<InputStream> pagesStreams = new ArrayList<>();
+        pages.forEach((page) -> pagesStreams.add(bookStorageService.loadPageContent(page.getS3FilePath())));
+        return pdfService.collectBookFromPages(pagesStreams);
     }
 
     @Override
@@ -42,27 +48,50 @@ public class BookServiceImpl implements BookService {
     @Override
     public void createBook(Book book, UUID authorId) {
         book.setAuthorId(authorId);
-        book.setStatus(BookStatus.DRAFT);
+        book.setStatus(BookStatus.EMPTY);
         bookManagementService.createBook(book);
     }
 
     @Override
-    public void createBookContent(UUID bookId, UUID authorId, InputStream content, Long size) {
+    public void createBookContent(UUID bookId, UUID authorId, InputStream content) {
+
         var book = bookManagementService.loadBookByUUID(bookId);
-        if (book.getS3ArchivePath() != null) {
+        if (!book.getStatus().equals(BookStatus.EMPTY)) {
             throw new BookContentAlreadyExistException();
         }
         if (!book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
-        var path = bookStorageService.createContent(bookId, new BufferedInputStream(content), size);
-        try (InputStream pdfContent =
-                     new BufferedInputStream(bookStorageService.loadContent(path))){
-            Integer countOfPages = pdfService.countOfPages(pdfContent);
-            bookManagementService.addNewBookContent(bookId,path, countOfPages);
-        } catch (Exception e) {
-            bookStorageService.removeContent(path);
-            throw new ContentSaveException();
+        if (pageService.getCountOfPages(bookId) > 0){
+            removeAllBookPages(bookId);
+        }
+        var pagesSteams = pdfService.loadPagesStreams(content);
+        int iterator = 0;
+        for (InputStream page: pagesSteams.keySet()) {
+
+            try(InputStream stream = new BufferedInputStream(page)) {
+                var pageId = pageService.addNewPageToBook(book, iterator++);
+                var path = bookStorageService.createPageContent(bookId, pageId, stream, pagesSteams.get(page));
+                pageService.updatePageFilePath(pageId, path);
+            } catch (Exception e){
+                removeAllBookPages(bookId);
+                throw new ContentSaveException();
+            }
+        }
+        bookManagementService.updateBookStatus(bookId, BookStatus.DRAFT);
+
+    }
+
+    private void removeAllBookPages(UUID bookId) {
+        try {
+            bookManagementService.removeAllPages(bookId);
+        } catch (Exception __ignore){
+            log.error("Error while removing pages from book with id: {}", bookId);
+        }
+        try {
+            bookStorageService.removeBookContent(bookId);
+        } catch (Exception __ignore) {
+            log.error("Error while removing pages from book with id: {}", bookId);
         }
     }
 

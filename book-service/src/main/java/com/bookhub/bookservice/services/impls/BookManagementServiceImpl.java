@@ -1,6 +1,6 @@
 package com.bookhub.bookservice.services.impls;
 
-import com.bookhub.bookservice.enums.SourceType;
+import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
@@ -12,6 +12,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -37,20 +38,23 @@ public class BookManagementServiceImpl implements BookManagementService {
     }
 
     @Override
-    @Transactional
-    public void addNewBookContent(UUID bookId, String path, int countOfPages) {
+    public List<Page> loadBookPagesByUUID(UUID bookId) {
         var book = bookRepository.getReferenceById(bookId);
-        book.setS3ArchivePath(path);
-        for (int i = 0; i < countOfPages; i++) {
-            var page = Page.builder()
-                    .book(book)
-                    .pageNumber(i+1)
-                    .sourceType(SourceType.ORIGINAL_PDF)
-                    .originalPageIndex(i)
-                    .build();
-            book.addPage(page);
-        }
-        bookRepository.save(book);
+        return book.getPages();
+    }
+
+    @Override
+    @Transactional
+    public void removeAllPages(UUID bookId) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.getPages().clear();
+    }
+
+    @Override
+    @Transactional
+    public void updateBookStatus(UUID bookId, BookStatus bookStatus) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.setStatus(bookStatus);
     }
 
 }

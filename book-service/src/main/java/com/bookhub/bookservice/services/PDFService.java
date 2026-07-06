@@ -1,9 +1,11 @@
 package com.bookhub.bookservice.services;
 
-import java.io.IOException;
 import java.io.InputStream;
+import java.util.LinkedHashMap;
+import java.util.List;
 
 public interface PDFService {
 
-    Integer countOfPages(InputStream stream) throws IOException;
+    LinkedHashMap<InputStream,Long> loadPagesStreams(InputStream content);
+    InputStream collectBookFromPages(List<InputStream> pages);
 }
