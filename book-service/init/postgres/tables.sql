@@ -21,7 +21,6 @@ CREATE TABLE book_pages (
     id UUID PRIMARY KEY,
     book_id UUID NOT NULL,
     page_number INTEGER NOT NULL,
-    source_type VARCHAR(20) NOT NULL,
     original_page_index INTEGER,
     s3_patch_path VARCHAR(512),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -35,4 +34,7 @@ CREATE TABLE book_pages (
 );
 
 CREATE INDEX idx_book_pages_book_source
-    ON book_pages (book_id, source_type);
+    ON book_pages (book_id);
+CREATE UNIQUE INDEX uq_book_id_page_number
+    ON book_pages (book_id, page_number);
+

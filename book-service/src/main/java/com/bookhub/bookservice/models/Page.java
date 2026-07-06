@@ -1,6 +1,5 @@
 package com.bookhub.bookservice.models;
 
-import com.bookhub.bookservice.enums.SourceType;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -48,10 +47,6 @@ public class Page {
 
     @Column(name = "page_number", nullable = false)
     private Integer pageNumber;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source_type", nullable = false, length = 20)
-    private SourceType sourceType;
 
     @Column(name = "original_page_index")
     private Integer originalPageIndex;
