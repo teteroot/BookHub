@@ -22,7 +22,9 @@ spring:
     storage:
       bucket-name: pdf-bucket
       content-type: application/pdf
-      destination: books/%s/content.pdf
+      destination: books/%s
+      page-destination: /pages
+      file-extension: .pdf
 server:
   port: 8002
 security:
