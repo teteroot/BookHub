@@ -68,7 +68,7 @@ public class BookController {
                                                   @AuthenticationPrincipal GatewayUserDetails userDetails) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookService.createBookContent(uuid,userDetails.getUserId(),content,pdf.getSize());
+            bookService.createBookContent(uuid,userDetails.getUserId(),content);
         }
         return ResponseEntity.noContent().build();
     }
