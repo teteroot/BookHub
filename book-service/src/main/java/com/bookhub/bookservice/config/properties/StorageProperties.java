@@ -12,4 +12,6 @@ public class StorageProperties {
     private String bucketName;
     private String contentType;
     private String destination;
+    private String pageDestination;
+    private String fileExtension;
 }

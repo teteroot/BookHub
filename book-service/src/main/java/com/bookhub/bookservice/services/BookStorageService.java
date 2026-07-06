@@ -5,9 +5,9 @@ import java.util.UUID;
 
 public interface BookStorageService {
 
-    String createContent(UUID bookId, InputStream content, Long size);
+    String createPageContent(UUID bookId,UUID pageId, InputStream content, Long size);
 
-    void removeContent(String path);
+    InputStream loadPageContent(String path);
 
-    InputStream loadContent(String path);
+    void removeBookContent(UUID bookId);
 }
