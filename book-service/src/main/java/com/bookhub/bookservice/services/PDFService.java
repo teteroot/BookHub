@@ -7,5 +7,5 @@ import java.util.List;
 public interface PDFService {
 
     LinkedHashMap<InputStream,Long> loadPagesStreams(InputStream content);
-    InputStream collectBookFromPages(List<InputStream> pages);
+    byte[] collectBookFromPages(List<InputStream> pages);
 }
