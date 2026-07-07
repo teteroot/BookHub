@@ -1,10 +1,7 @@
 package com.bookhub.bookservice.handlers;
 
 import com.bookhub.bookservice.dtos.responses.ErrorResponseDto;
-import com.bookhub.bookservice.exceptions.BadRequestException;
-import com.bookhub.bookservice.exceptions.ForbiddenException;
-import com.bookhub.bookservice.exceptions.InternalServerErrorException;
-import com.bookhub.bookservice.exceptions.NotFoundException;
+import com.bookhub.bookservice.exceptions.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -51,6 +48,12 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleInternalServerErrorException(InternalServerErrorException e) {
         var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 500);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+    }
+
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponseDto> handleConflictException(ConflictException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 409);
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
 }

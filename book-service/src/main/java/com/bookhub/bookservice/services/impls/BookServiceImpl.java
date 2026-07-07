@@ -2,7 +2,6 @@ package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
-import com.bookhub.bookservice.exceptions.extensions.BookContentAlreadyExistException;
 import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
@@ -11,7 +10,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.BufferedInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -54,24 +52,17 @@ public class BookServiceImpl implements BookService {
 
     @Override
     public void createBookContent(UUID bookId, UUID authorId, InputStream content) {
-
-        var book = bookManagementService.loadBookByUUID(bookId);
-        if (!book.getStatus().equals(BookStatus.EMPTY)) {
-            throw new BookContentAlreadyExistException();
-        }
-        if (!book.getAuthorId().equals(authorId)){
-            throw new BookAccessDeniedException();
-        }
+        var book = bookManagementService.claimBookForUpload(bookId, authorId);
         if (pageService.getCountOfPages(bookId) > 0){
             removeAllBookPages(bookId);
         }
         var pagesSteams = pdfService.loadPagesStreams(content);
         int iterator = 0;
-        for (InputStream page: pagesSteams.keySet()) {
+        for (var pageEntry: pagesSteams.entrySet()) {
 
-            try(InputStream stream = new BufferedInputStream(page)) {
+            try(InputStream stream = pageEntry.getKey()) {
                 var pageId = pageService.addNewPageToBook(book, iterator++);
-                var path = bookStorageService.createPageContent(bookId, pageId, stream, pagesSteams.get(page));
+                var path = bookStorageService.createPageContent(bookId, pageId, stream, pageEntry.getValue());
                 pageService.updatePageFilePath(pageId, path);
             } catch (Exception e){
                 removeAllBookPages(bookId);

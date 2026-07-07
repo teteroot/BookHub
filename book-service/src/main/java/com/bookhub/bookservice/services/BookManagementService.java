@@ -10,6 +10,7 @@ import java.util.UUID;
 public interface BookManagementService {
 
     Book loadBookByUUID(UUID uuid);
+    Book claimBookForUpload(UUID bookId, UUID authorId);
     void createBook(Book book);
     List<Page> loadBookPagesByUUID(UUID bookId);
 

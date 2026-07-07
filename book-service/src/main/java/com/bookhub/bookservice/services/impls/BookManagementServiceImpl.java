@@ -1,17 +1,18 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
-import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
-import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
+import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -25,6 +26,26 @@ public class BookManagementServiceImpl implements BookManagementService {
     public Book loadBookByUUID(UUID uuid) {
         return bookRepository.findById(uuid)
                 .orElseThrow(BookNotFoundException::new);
+    }
+
+    @Override
+    @Transactional
+    public Book claimBookForUpload(UUID bookId, UUID authorId) {
+        var book = bookRepository.findById(bookId)
+                .orElseThrow(BookNotFoundException::new);
+        if (!book.getAuthorId().equals(authorId)){
+            throw new BookAccessDeniedException();
+        }
+        if (!book.getStatus().equals(BookStatus.EMPTY)) {
+            throw new BookContentAlreadyExistException();
+        }
+        book.setUpdatedAt(Instant.now());
+        try {
+            bookRepository.saveAndFlush(book);
+        } catch (ObjectOptimisticLockingFailureException e){
+            throw new BookConcurrentModificationException();
+        }
+        return book;
     }
 
     @Override
