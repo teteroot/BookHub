@@ -13,4 +13,5 @@ public interface BookService {
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
     Integer getCountOfPages(UUID uuid);
+    InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber);
 }

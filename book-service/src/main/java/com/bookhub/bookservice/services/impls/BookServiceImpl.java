@@ -42,6 +42,16 @@ public class BookServiceImpl implements BookService {
     }
 
     @Override
+    public InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber) {
+        var book = bookManagementService.loadBookByUUID(bookId);
+        if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(readerId)){
+            throw new BookAccessDeniedException();
+        }
+        var page = pageService.loadPageByBookIdAndPageNumber(bookId, pageNumber);
+        return bookStorageService.loadContent(page.getS3FilePath());
+    }
+
+    @Override
     public Book loadBookByUUID(UUID uuid) {
         return bookManagementService.loadBookByUUID(uuid);
     }
