@@ -145,7 +145,7 @@ class BookControllerTest {
         var book = Book.builder().id(uuid).build();
         when(bookService.loadBookByUUID(uuid))
                 .thenReturn(book);
-        when(bookMapper.toDto(book))
+        when(bookMapper.toDto(book,0))
                 .thenReturn(new BookResponseDto(
                         uuid,"","",5,UUID.randomUUID(), BookStatus.DRAFT, Instant.now(), 0, "", ""
                 ));
