@@ -41,7 +41,7 @@ public class PDFServiceImpl implements PDFService {
     }
 
     @Override
-    public InputStream collectBookFromPages(List<InputStream> pages) {
+    public byte[] collectBookFromPages(List<InputStream> pages) {
         try {
             PDFMergerUtility mergerUtility = new PDFMergerUtility();
             ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
@@ -50,7 +50,7 @@ public class PDFServiceImpl implements PDFService {
                 mergerUtility.addSource(RandomAccessReadBuffer.createBufferFromStream(page));
             }
             mergerUtility.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly().streamCache);
-            return new ByteArrayInputStream(byteArrayOutputStream.toByteArray());
+            return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

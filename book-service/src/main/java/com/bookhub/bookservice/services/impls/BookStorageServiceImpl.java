@@ -48,7 +48,28 @@ public class BookStorageServiceImpl implements BookStorageService {
     }
 
     @Override
-    public InputStream loadPageContent(String path) {
+    public String createBookContent(UUID bookId,InputStream content, Long size) {
+        var path = "%s/content%s".formatted(
+                storageProperties.getDestination().formatted(bookId),
+                storageProperties.getFileExtension()
+        );
+        try {
+            s3Template.upload(storageProperties.getBucketName(),
+                    path,
+                    content,
+                    ObjectMetadata.builder()
+                            .contentType(storageProperties.getContentType())
+                            .contentLength(size)
+                            .build()
+            );
+        } catch (RuntimeException e) {
+            throw new ContentSaveException();
+        }
+        return path;
+    }
+
+    @Override
+    public InputStream loadContent(String path) {
         try {
             var load = s3Template.download(storageProperties.getBucketName(), path);
             try(InputStream inputStream = load.getInputStream()) {
@@ -61,7 +82,6 @@ public class BookStorageServiceImpl implements BookStorageService {
 
     @Override
     public void removeBookContent(UUID bookId) {
-
 
         var path = "%s/".formatted(storageProperties.getDestination().formatted(bookId));
         var toDelete = s3Template.listObjects(storageProperties.getBucketName(),path);

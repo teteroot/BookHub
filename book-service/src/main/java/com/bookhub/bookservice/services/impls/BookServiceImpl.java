@@ -2,6 +2,7 @@ package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
+import com.bookhub.bookservice.exceptions.extensions.BookContentNotFoundException;
 import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,14 +30,15 @@ public class BookServiceImpl implements BookService {
     @Override
     public InputStream loadBookStream(UUID authorId, UUID bookId) {
         var book = bookManagementService.loadBookByUUID(bookId);
-        var pages = bookManagementService.loadBookPagesByUUID(bookId);
         if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
-
-        List<InputStream> pagesStreams = new ArrayList<>();
-        pages.forEach((page) -> pagesStreams.add(bookStorageService.loadPageContent(page.getS3FilePath())));
-        return pdfService.collectBookFromPages(pagesStreams);
+        if (book.getS3ArchivePath() != null){
+            return bookStorageService.loadContent(book.getS3ArchivePath());
+        } else {
+            cacheBookContent(bookId);
+            return loadBookStream(authorId, bookId);
+        }
     }
 
     @Override
@@ -95,5 +98,19 @@ public class BookServiceImpl implements BookService {
     @Override
     public Integer getCountOfPages(UUID uuid) {
         return pageService.getCountOfPages(uuid);
+    }
+
+    private void cacheBookContent(UUID bookId){
+        var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
+        List<InputStream> pagesStreams = new ArrayList<>();
+        pages.forEach((page) -> pagesStreams.add(bookStorageService.loadContent(page.getS3FilePath())));
+        var bookBytes = pdfService.collectBookFromPages(pagesStreams);
+        if (bookBytes.length == 0) {
+            throw new BookContentNotFoundException();
+        }
+        bookManagementService.updateBookContentPath(
+                bookId,
+                bookStorageService.createBookContent(bookId,new ByteArrayInputStream(bookBytes), (long) bookBytes.length)
+        );
     }
 }

@@ -3,7 +3,6 @@ package com.bookhub.bookservice.services.impls;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
-import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
 import lombok.RequiredArgsConstructor;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -59,12 +57,6 @@ public class BookManagementServiceImpl implements BookManagementService {
     }
 
     @Override
-    public List<Page> loadBookPagesByUUID(UUID bookId) {
-        var book = bookRepository.getReferenceById(bookId);
-        return book.getPages();
-    }
-
-    @Override
     @Transactional
     public void removeAllPages(UUID bookId) {
         var book = bookRepository.getReferenceById(bookId);
@@ -76,6 +68,13 @@ public class BookManagementServiceImpl implements BookManagementService {
     public void updateBookStatus(UUID bookId, BookStatus bookStatus) {
         var book = bookRepository.getReferenceById(bookId);
         book.setStatus(bookStatus);
+    }
+
+    @Override
+    @Transactional
+    public void updateBookContentPath(UUID bookId,String path) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.setS3ArchivePath(path);
     }
 
 }
