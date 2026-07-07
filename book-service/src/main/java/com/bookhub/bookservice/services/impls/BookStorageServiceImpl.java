@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.config.properties.StorageProperties;
+import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
 import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.services.BookStorageService;
 import io.awspring.cloud.s3.ObjectMetadata;
@@ -76,7 +77,7 @@ public class BookStorageServiceImpl implements BookStorageService {
                 return new ByteArrayInputStream(inputStream.readAllBytes());
             }
         } catch (Exception e) {
-            throw new ContentSaveException();
+            throw new ContentLoadException();
         }
     }
 
