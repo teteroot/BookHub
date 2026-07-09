@@ -13,7 +13,6 @@ import software.amazon.awssdk.services.s3.model.Delete;
 import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
 import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.UUID;
 
@@ -73,9 +72,7 @@ public class BookStorageServiceImpl implements BookStorageService {
     public InputStream loadContent(String path) {
         try {
             var load = s3Template.download(storageProperties.getBucketName(), path);
-            try(InputStream inputStream = load.getInputStream()) {
-                return new ByteArrayInputStream(inputStream.readAllBytes());
-            }
+            return load.getInputStream();
         } catch (Exception e) {
             throw new ContentLoadException();
         }
