@@ -6,7 +6,7 @@ import com.bookhub.bookservice.models.Page;
 import java.io.InputStream;
 import java.util.UUID;
 
-public interface BookService {
+public interface BookOrchestrator {
     InputStream loadBookStream(UUID authorId, UUID bookId);
     Book loadBookByUUID(UUID uuid);
     void createBook(Book book, UUID authorId);

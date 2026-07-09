@@ -4,7 +4,7 @@ import com.bookhub.bookservice.dtos.requests.BookCreateRequestDto;
 import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.security.GatewayUserDetails;
-import com.bookhub.bookservice.services.BookService;
+import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,13 +29,13 @@ import java.util.UUID;
 public class BookController {
 
     private final BookMapper bookMapper;
-    private final BookService bookService;
+    private final BookOrchestrator bookOrchestrator;
     private final PDFValidator pdfValidator;
 
     @GetMapping("/{uuid}")
     public ResponseEntity<BookResponseDto> getBook(@PathVariable UUID uuid){
-        var book = bookService.loadBookByUUID(uuid);
-        var countOfPages = bookService.getCountOfPages(uuid);
+        var book = bookOrchestrator.loadBookByUUID(uuid);
+        var countOfPages = bookOrchestrator.getCountOfPages(uuid);
         var dto = bookMapper.toDto(book,countOfPages);
 
         return ResponseEntity.ok(dto);
@@ -45,7 +45,7 @@ public class BookController {
     public ResponseEntity<Resource> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                  @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var bookStream = bookService.loadBookStream(authorId,uuid);
+        var bookStream = bookOrchestrator.loadBookStream(authorId,uuid);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf")
@@ -57,7 +57,7 @@ public class BookController {
     public ResponseEntity<Void> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         var book = bookMapper.toBook(bookCreateRequestDto);
-        bookService.createBook(book,userDetails.getUserId());
+        bookOrchestrator.createBook(book,userDetails.getUserId());
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
@@ -68,7 +68,7 @@ public class BookController {
                                                   @AuthenticationPrincipal GatewayUserDetails userDetails) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookService.createBookContent(uuid,userDetails.getUserId(),content);
+            bookOrchestrator.createBookContent(uuid,userDetails.getUserId(),content);
         }
         return ResponseEntity.noContent().build();
     }
