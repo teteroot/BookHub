@@ -9,7 +9,7 @@ import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.security.TestUserDetailsService;
-import com.bookhub.bookservice.services.BookService;
+import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,7 +47,7 @@ class BookControllerTest {
     private PDFValidator pdfValidator;
 
     @MockitoBean
-    private BookService bookService;
+    private BookOrchestrator bookOrchestrator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -115,7 +115,7 @@ class BookControllerTest {
         BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", 5);
 
         doThrow(new BookAlreadyExistException("book_title"))
-                .when(bookService).createBook(any(), any());
+                .when(bookOrchestrator).createBook(any(), any());
         mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
@@ -127,7 +127,7 @@ class BookControllerTest {
     void testSuccessfulGetBook() throws Exception {
         var uuid = UUID.randomUUID();
         var book = Book.builder().id(uuid).build();
-        when(bookService.loadBookByUUID(uuid)).thenReturn(book);
+        when(bookOrchestrator.loadBookByUUID(uuid)).thenReturn(book);
         when(bookMapper.toDto(book, 0))
                 .thenReturn(new BookResponseDto(
                         uuid, "", "", 5, UUID.randomUUID(), BookStatus.DRAFT, Instant.now(), 0, "", ""
@@ -140,7 +140,7 @@ class BookControllerTest {
     @Test
     void testGetNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookByUUID(uuid)).thenThrow(new BookNotFoundException());
+        when(bookOrchestrator.loadBookByUUID(uuid)).thenThrow(new BookNotFoundException());
         mockMvc.perform(get("/api/v1/books/{uuid}", uuid))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Book not found"));
@@ -149,7 +149,7 @@ class BookControllerTest {
     @Test
     void testDownloadBookWithoutPrincipal_publicBookAllowed() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
                 .thenReturn(InputStream.nullInputStream());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -162,7 +162,7 @@ class BookControllerTest {
     @WithUserDetails("READER")
     void testDownloadBookWithReaderPrincipal() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(any(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(any(), eq(uuid)))
                 .thenReturn(InputStream.nullInputStream());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -174,7 +174,7 @@ class BookControllerTest {
     @WithUserDetails("AUTHOR")
     void testDownloadOwnDraftBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(any(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(any(), eq(uuid)))
                 .thenReturn(InputStream.nullInputStream());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -184,7 +184,7 @@ class BookControllerTest {
     @Test
     void testDownloadForbiddenDraftBook_anonymousAccess() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
                 .thenThrow(new BookAccessDeniedException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -195,7 +195,7 @@ class BookControllerTest {
     @Test
     void testDownloadNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
                 .thenThrow(new BookNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -206,7 +206,7 @@ class BookControllerTest {
     @Test
     void testDownloadBookWithNoContentYet() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
                 .thenThrow(new BookContentNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -248,7 +248,7 @@ class BookControllerTest {
                 .andExpect(status().isNoContent());
 
         verify(pdfValidator).validateBookPDF(any());
-        verify(bookService).createBookContent(eq(uuid), any(), any());
+        verify(bookOrchestrator).createBookContent(eq(uuid), any(), any());
     }
 
     @Test
@@ -265,7 +265,7 @@ class BookControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.message").value("Incorrect PDF file format"));
 
-        verify(bookService, never()).createBookContent(any(), any(), any());
+        verify(bookOrchestrator, never()).createBookContent(any(), any(), any());
     }
 
     @Test
@@ -276,7 +276,7 @@ class BookControllerTest {
                 "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
 
         doThrow(new BookNotFoundException())
-                .when(bookService).createBookContent(eq(uuid), any(), any());
+                .when(bookOrchestrator).createBookContent(eq(uuid), any(), any());
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
@@ -292,7 +292,7 @@ class BookControllerTest {
                 "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
 
         doThrow(new BookAccessDeniedException())
-                .when(bookService).createBookContent(eq(uuid), any(), any());
+                .when(bookOrchestrator).createBookContent(eq(uuid), any(), any());
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
@@ -308,7 +308,7 @@ class BookControllerTest {
                 "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
 
         doThrow(new BookContentAlreadyExistException())
-                .when(bookService).createBookContent(eq(uuid), any(), any());
+                .when(bookOrchestrator).createBookContent(eq(uuid), any(), any());
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
@@ -324,7 +324,7 @@ class BookControllerTest {
                 "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
 
         doThrow(new ContentSaveException())
-                .when(bookService).createBookContent(eq(uuid), any(), any());
+                .when(bookOrchestrator).createBookContent(eq(uuid), any(), any());
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
@@ -340,7 +340,7 @@ class BookControllerTest {
                 "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
 
         doThrow(new BookConcurrentModificationException())
-                .when(bookService).createBookContent(eq(uuid), any(), any());
+                .when(bookOrchestrator).createBookContent(eq(uuid), any(), any());
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
@@ -357,6 +357,6 @@ class BookControllerTest {
                 .andExpect(status().isBadRequest());
 
         verifyNoInteractions(pdfValidator);
-        verify(bookService, never()).createBookContent(any(), any(), any());
+        verify(bookOrchestrator, never()).createBookContent(any(), any(), any());
     }
 }

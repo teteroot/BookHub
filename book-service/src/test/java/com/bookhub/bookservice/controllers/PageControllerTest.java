@@ -6,7 +6,7 @@ import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
 import com.bookhub.bookservice.exceptions.extensions.PageNotFoundException;
 import com.bookhub.bookservice.security.TestUserDetailsService;
-import com.bookhub.bookservice.services.BookService;
+import com.bookhub.bookservice.services.BookOrchestrator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PageControllerTest {
 
     @MockitoBean
-    private BookService bookService;
+    private BookOrchestrator bookOrchestrator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -58,7 +58,7 @@ class PageControllerTest {
     @Test
     void testDownloadBookPageWithoutPrincipal_publicBookAllowed() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(null,uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(null,uuid,5))
                 .thenReturn(InputStream.nullInputStream());
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
                 .andExpect(status().isOk())
@@ -69,7 +69,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadBookWithReaderPrincipal() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
                 .thenReturn(InputStream.nullInputStream());
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
                 .andExpect(status().isOk())
@@ -81,7 +81,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadForbiddenDraftBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
                 .thenThrow(new BookAccessDeniedException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -93,7 +93,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
                 .thenThrow(new BookNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -105,7 +105,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadNonExistBookPage() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
                 .thenThrow(new PageNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -117,7 +117,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadBookPageWithS3Error() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookService.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
+        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(testUserDetailsService.getUserId(),uuid,5))
                 .thenThrow(new ContentLoadException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))

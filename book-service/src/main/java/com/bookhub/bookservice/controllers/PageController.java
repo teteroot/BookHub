@@ -1,7 +1,7 @@
 package com.bookhub.bookservice.controllers;
 
 import com.bookhub.bookservice.security.GatewayUserDetails;
-import com.bookhub.bookservice.services.BookService;
+import com.bookhub.bookservice.services.BookOrchestrator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
@@ -20,14 +20,14 @@ import java.util.UUID;
 @RequestMapping("/api/v1/books/{bookId}/pages")
 public class PageController {
 
-    private final BookService bookService;
+    private final BookOrchestrator bookOrchestrator;
 
     @GetMapping("/{pageNumber}")
     public ResponseEntity<Resource> getPageByPageNumber(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                         @PathVariable UUID bookId,
                                                         @PathVariable Integer pageNumber){
         UUID readerId = userDetails != null ? userDetails.getUserId() : null;
-        var pageStream = bookService.loadPageStreamByBookIdAndPageNumber(readerId,bookId, pageNumber);
+        var pageStream = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(readerId,bookId, pageNumber);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(pageStream));
