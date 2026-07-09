@@ -6,6 +6,7 @@ import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.services.BookManagementService;
 import com.bookhub.bookservice.services.BookStorageService;
+import com.bookhub.bookservice.services.FileTempService;
 import com.bookhub.bookservice.services.PDFService;
 import com.bookhub.bookservice.services.PageService;
 import org.junit.jupiter.api.Test;
@@ -16,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -23,7 +25,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class BookServiceImplTest {
+class BookOrchestratorImplTest {
 
     @Mock
     private BookManagementService bookManagementService;
@@ -33,9 +35,11 @@ class BookServiceImplTest {
     private PDFService pdfService;
     @Mock
     private PageService pageService;
+    @Mock
+    private FileTempService fileTempService;
 
     @InjectMocks
-    private BookServiceImpl bookService;
+    private BookOrchestratorImpl bookService;
 
     @Test
     void testLoadForbiddenBookStream() {
@@ -54,37 +58,31 @@ class BookServiceImplTest {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
 
-        var bookWithoutArchive = Book.builder()
+        var book = Book.builder()
                 .id(bookId)
                 .authorId(authorId)
                 .status(BookStatus.DRAFT)
                 .s3ArchivePath(null)
                 .build();
-        var bookWithArchive = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.DRAFT)
-                .s3ArchivePath("archive-path")
-                .build();
 
-        when(bookManagementService.loadBookByUUID(bookId))
-                .thenReturn(bookWithoutArchive)
-                .thenReturn(bookWithArchive);
+        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(book);
 
         var page = Page.builder().id(UUID.randomUUID()).s3FilePath("page-path").build();
         when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(List.of(page));
-        when(bookStorageService.loadContent("page-path")).thenReturn(InputStream.nullInputStream());
-
-        var bookBytes = new byte[]{1, 2, 3};
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(bookBytes);
-        when(bookStorageService.createBookContent(eq(bookId), any(), eq((long) bookBytes.length)))
+        var pageTempPath = Path.of("page-temp.pdf");
+        var bookTempPath = Path.of("book-temp.pdf");
+        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(pageTempPath);
+        when(fileTempService.openStream(bookTempPath)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(bookTempPath)).thenReturn(20L);
+        when(pdfService.collectBookFromPages(anyList())).thenReturn(bookTempPath);
+        when(bookStorageService.createBookContent(eq(bookId), any(), eq(20L)))
                 .thenReturn("archive-path");
         when(bookStorageService.loadContent("archive-path")).thenReturn(InputStream.nullInputStream());
 
         assertDoesNotThrow(() -> bookService.loadBookStream(authorId, bookId));
 
         verify(bookManagementService).updateBookContentPath(bookId, "archive-path");
-        verify(bookManagementService, times(2)).loadBookByUUID(bookId);
+        verify(bookManagementService).loadBookByUUID(bookId);
         verify(bookStorageService).loadContent("archive-path");
     }
 
@@ -104,6 +102,7 @@ class BookServiceImplTest {
 
         assertDoesNotThrow(() -> bookService.loadBookStream(authorId, bookId));
 
+        verifyNoInteractions(fileTempService);
         verify(pageService, never()).loadBookPagesSortedByPageNumber(any());
         verify(pdfService, never()).collectBookFromPages(any());
         verify(bookManagementService, never()).updateBookContentPath(any(), any());
@@ -122,11 +121,11 @@ class BookServiceImplTest {
 
         when(bookManagementService.loadBookByUUID(bookId)).thenReturn(book);
         when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(Collections.emptyList());
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(new byte[0]);
 
         assertThrows(BookContentNotFoundException.class,
                 () -> bookService.loadBookStream(authorId, bookId));
 
+        verifyNoInteractions(fileTempService);
         verify(bookStorageService, never()).createBookContent(any(), any(), anyLong());
         verify(bookManagementService, never()).updateBookContentPath(any(), any());
     }
@@ -135,29 +134,26 @@ class BookServiceImplTest {
     void testLoadBookStream_publishedBookAccessibleByAnyone() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
+        var path = Path.of("book-temp.pdf");
         var bookWithoutArchive = Book.builder()
                 .id(bookId)
                 .authorId(authorId)
                 .status(BookStatus.PUBLISHED)
                 .s3ArchivePath(null)
                 .build();
-        var bookWithArchive = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.PUBLISHED)
-                .s3ArchivePath("archive-path")
-                .build();
-
         when(bookManagementService.loadBookByUUID(bookId))
-                .thenReturn(bookWithoutArchive)
-                .thenReturn(bookWithArchive);
+                .thenReturn(bookWithoutArchive);
         when(pageService.loadBookPagesSortedByPageNumber(bookId))
                 .thenReturn(List.of(Page.builder()
                         .id(UUID.randomUUID())
                         .s3FilePath("path")
                         .build()));
-        when(bookStorageService.loadContent("path")).thenReturn(InputStream.nullInputStream());
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(new byte[]{1, 2, 3});
+        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(Path.of("page-temp.pdf"));
+        when(fileTempService.openStream(path)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(path)).thenReturn(20L);
+        when(pdfService.collectBookFromPages(anyList())).thenReturn(path);
+        when(bookStorageService.createBookContent(eq(bookId), any(), eq(20L))).thenReturn("archive-path");
+        when(bookStorageService.loadContent("archive-path")).thenReturn(InputStream.nullInputStream());
         assertDoesNotThrow(() -> bookService.loadBookStream(UUID.randomUUID(), bookId));
     }
 
@@ -181,21 +177,12 @@ class BookServiceImplTest {
                 .status(BookStatus.PUBLISHED)
                 .s3ArchivePath(null)
                 .build();
-        var bookWithArchive = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.PUBLISHED)
-                .s3ArchivePath("archive-path")
-                .build();
 
-        when(bookManagementService.loadBookByUUID(bookId))
-                .thenReturn(bookWithoutArchive)
-                .thenReturn(bookWithArchive);
+        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(bookWithoutArchive);
         when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(Collections.emptyList());
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(new byte[0]);
 
         assertThrows(BookContentNotFoundException.class,() -> bookService.loadBookStream(authorId, bookId));
-        verifyNoInteractions(bookStorageService);
+        verifyNoInteractions(bookStorageService, fileTempService);
     }
 
     @Test
@@ -245,10 +232,13 @@ class BookServiceImplTest {
         var authorId = UUID.randomUUID();
         var book = Book.builder().id(bookId).authorId(authorId).build();
         var pageStream = InputStream.nullInputStream();
+        var path = Path.of("page-1.pdf");
 
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
         when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPagesStreams(any())).thenReturn(new LinkedHashMap<>(Map.of(pageStream, 123L)));
+        when(pdfService.loadPages(any())).thenReturn(List.of(path));
+        when(fileTempService.openStream(path)).thenReturn(pageStream);
+        when(fileTempService.sizeOf(path)).thenReturn(123L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
         when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L))).thenReturn("path");
 
@@ -267,7 +257,7 @@ class BookServiceImplTest {
 
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
         when(pageService.getCountOfPages(bookId)).thenReturn(5);
-        when(pdfService.loadPagesStreams(any())).thenReturn(new LinkedHashMap<>());
+        when(pdfService.loadPages(any())).thenReturn(Collections.emptyList());
 
         bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
 
@@ -284,13 +274,15 @@ class BookServiceImplTest {
 
         var stream1 = InputStream.nullInputStream();
         var stream2 = InputStream.nullInputStream();
-        var orderedPages = new LinkedHashMap<InputStream, Long>();
-        orderedPages.put(stream1, 100L);
-        orderedPages.put(stream2, 200L);
-
+        var path1 = Path.of("page-1.pdf");
+        var path2 = Path.of("page-2.pdf");
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPagesStreams(any())).thenReturn(orderedPages);
+        when(pageService.getCountOfPages(bookId)).thenReturn(5);
+        when(pdfService.loadPages(any())).thenReturn(List.of(path1, path2));
+        when(fileTempService.openStream(path1)).thenReturn(stream1);
+        when(fileTempService.openStream(path2)).thenReturn(stream2);
+        when(fileTempService.sizeOf(path1)).thenReturn(100L);
+        when(fileTempService.sizeOf(path2)).thenReturn(200L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
         when(bookStorageService.createPageContent(eq(bookId), any(), any(), anyLong())).thenReturn("path");
 
@@ -307,13 +299,15 @@ class BookServiceImplTest {
         var authorId = UUID.randomUUID();
         var book = Book.builder().id(bookId).authorId(authorId).build();
         var pageStream = InputStream.nullInputStream();
-
+        var path =  Path.of("page-1.pdf");
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
         when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPagesStreams(any())).thenReturn(new LinkedHashMap<>(Map.of(pageStream, 123L)));
+        when(pdfService.loadPages(any())).thenReturn(List.of(path));
+        when(fileTempService.openStream(path)).thenReturn(pageStream);
+        when(fileTempService.sizeOf(path)).thenReturn(123L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
         when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L)))
-                .thenThrow(new RuntimeException("S3 unavailable"));
+                .thenThrow(new ContentSaveException());
 
         assertThrows(ContentSaveException.class,
                 () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
@@ -329,16 +323,18 @@ class BookServiceImplTest {
         var authorId = UUID.randomUUID();
         var book = Book.builder().id(bookId).authorId(authorId).build();
         var pageStream = InputStream.nullInputStream();
+        var path = Path.of("page-1.pdf");
 
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
         when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPagesStreams(any())).thenReturn(new LinkedHashMap<>(Map.of(pageStream, 123L)));
+        when(pdfService.loadPages(any())).thenReturn(List.of(path));
+        when(fileTempService.openStream(path)).thenReturn(pageStream);
+        when(fileTempService.sizeOf(path)).thenReturn(123L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
         when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L)))
                 .thenThrow(new RuntimeException("S3 unavailable"));
         doThrow(new RuntimeException("DB also down")).when(bookManagementService).removeAllPages(bookId);
 
-        // компенсация логирует ошибку, но не должна маскировать исходный ContentSaveException
         assertThrows(ContentSaveException.class,
                 () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
 
@@ -366,7 +362,7 @@ class BookServiceImplTest {
 
         when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
         when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPagesStreams(any())).thenReturn(new LinkedHashMap<>());
+        when(pdfService.loadPages(any())).thenReturn(Collections.emptyList());
 
         bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
 

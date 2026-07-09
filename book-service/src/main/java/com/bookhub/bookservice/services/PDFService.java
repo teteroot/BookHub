@@ -1,11 +1,12 @@
 package com.bookhub.bookservice.services;
 
 import java.io.InputStream;
-import java.util.LinkedHashMap;
+import java.nio.file.Path;
 import java.util.List;
 
 public interface PDFService {
 
-    LinkedHashMap<InputStream,Long> loadPagesStreams(InputStream content);
-    byte[] collectBookFromPages(List<InputStream> pages);
+    List<Path> loadPages(InputStream content);
+    Path collectBookFromPages(List<Path> pages);
+
 }

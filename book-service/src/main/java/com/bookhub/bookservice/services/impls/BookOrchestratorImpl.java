@@ -3,6 +3,7 @@ package com.bookhub.bookservice.services.impls;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
 import com.bookhub.bookservice.exceptions.extensions.BookContentNotFoundException;
+import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
 import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
@@ -11,8 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -20,12 +21,13 @@ import java.util.UUID;
 @Slf4j
 @RequiredArgsConstructor
 @Service
-public class BookServiceImpl implements BookService {
+public class BookOrchestratorImpl implements BookOrchestrator {
 
     private final BookManagementService bookManagementService;
     private final BookStorageService bookStorageService;
     private final PDFService pdfService;
     private final PageService pageService;
+    private final FileTempService fileTempService;
 
     @Override
     public InputStream loadBookStream(UUID authorId, UUID bookId) {
@@ -33,12 +35,11 @@ public class BookServiceImpl implements BookService {
         if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
-        if (book.getS3ArchivePath() != null){
-            return bookStorageService.loadContent(book.getS3ArchivePath());
-        } else {
-            cacheBookContent(bookId);
-            return loadBookStream(authorId, bookId);
+        var path = book.getS3ArchivePath();
+        if (path == null){
+            path = cacheBookContent(bookId);
         }
+        return bookStorageService.loadContent(path);
     }
 
     @Override
@@ -69,19 +70,26 @@ public class BookServiceImpl implements BookService {
         if (pageService.getCountOfPages(bookId) > 0){
             removeAllBookPages(bookId);
         }
-        var pagesSteams = pdfService.loadPagesStreams(content);
-        int iterator = 0;
-        for (var pageEntry: pagesSteams.entrySet()) {
-
-            try(InputStream stream = pageEntry.getKey()) {
-                var pageId = pageService.addNewPageToBook(book, iterator++);
-                var path = bookStorageService.createPageContent(bookId, pageId, stream, pageEntry.getValue());
-                pageService.updatePageFilePath(pageId, path);
-            } catch (Exception e){
-                removeAllBookPages(bookId);
-                throw new ContentSaveException();
+        List<Path> pages = null;
+        try {
+            pages = pdfService.loadPages(content);
+            for (int i = 0;i<pages.size();i++) {
+                try(InputStream stream = fileTempService.openStream(pages.get(i))) {
+                    var pageId = pageService.addNewPageToBook(book, i);
+                    var path = bookStorageService.createPageContent(bookId, pageId, stream, fileTempService.sizeOf(pages.get(i)));
+                    pageService.updatePageFilePath(pageId, path);
+                }
+            }
+        } catch (Exception e) {
+            removeAllBookPages(bookId);
+            log.error("Error while creating book content for bookId: {}", bookId, e);
+            throw new ContentSaveException();
+        } finally {
+            if (pages != null) {
+                fileTempService.deleteQuietly(pages);
             }
         }
+
         bookManagementService.updateBookStatus(bookId, BookStatus.DRAFT);
 
     }
@@ -89,14 +97,10 @@ public class BookServiceImpl implements BookService {
     private void removeAllBookPages(UUID bookId) {
         try {
             bookManagementService.removeAllPages(bookId);
-        } catch (Exception __ignore){
-            log.error("Error while removing pages from book with id: {}", bookId);
-        }
+        } catch (Exception ignored){}
         try {
             bookStorageService.removeBookContent(bookId);
-        } catch (Exception __ignore) {
-            log.error("Error while removing pages from book with id: {}", bookId);
-        }
+        } catch (Exception ignored) {}
     }
 
     @Override
@@ -110,17 +114,33 @@ public class BookServiceImpl implements BookService {
         return pageService.getCountOfPages(uuid);
     }
 
-    private void cacheBookContent(UUID bookId){
+    private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
-        List<InputStream> pagesStreams = new ArrayList<>();
-        pages.forEach((page) -> pagesStreams.add(bookStorageService.loadContent(page.getS3FilePath())));
-        var bookBytes = pdfService.collectBookFromPages(pagesStreams);
-        if (bookBytes.length == 0) {
+        if (pages.isEmpty()){
             throw new BookContentNotFoundException();
         }
-        bookManagementService.updateBookContentPath(
-                bookId,
-                bookStorageService.createBookContent(bookId,new ByteArrayInputStream(bookBytes), (long) bookBytes.length)
-        );
+        List<Path> pageFiles = new ArrayList<>();
+        Path bookPath = null;
+        try {
+            for (Page page: pages){
+                pageFiles.add(fileTempService.writeToTempFile("page-", ".pdf", os -> {
+                    try(InputStream stream = bookStorageService.loadContent(page.getS3FilePath())) {
+                        stream.transferTo(os);
+                    }
+                }));
+            }
+            bookPath = pdfService.collectBookFromPages(pageFiles);
+            try(InputStream fileStream = fileTempService.openStream(bookPath)) {
+                long bookSize = fileTempService.sizeOf(bookPath);
+                var path = bookStorageService.createBookContent(bookId,fileStream, bookSize);
+                bookManagementService.updateBookContentPath(bookId, path);
+                return path;
+            }
+        } catch (Exception e) {
+            throw new ContentLoadException();
+        } finally {
+            if (bookPath != null) pageFiles.add(bookPath);
+            fileTempService.deleteQuietly(pageFiles);
+        }
     }
 }

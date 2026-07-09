@@ -1,58 +1,54 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.services.FileTempService;
 import com.bookhub.bookservice.services.PDFService;
+import lombok.RequiredArgsConstructor;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.io.MemoryUsageSetting;
 import org.apache.pdfbox.io.RandomAccessReadBuffer;
 import org.apache.pdfbox.multipdf.PDFMergerUtility;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.LinkedHashMap;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
+@RequiredArgsConstructor
 @Service
 public class PDFServiceImpl implements PDFService {
 
-    @Override
-    public LinkedHashMap<InputStream, Long> loadPagesStreams(InputStream content) {
-        LinkedHashMap<InputStream, Long> pages = new LinkedHashMap<>();
+    private final FileTempService fileTempService;
 
+    @Override
+    public List<Path> loadPages(InputStream content) {
+        List<Path> pages = new ArrayList<>();
         try (PDDocument document = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(content))){
-            document.getPages().forEach((page) -> {
+            for (PDPage page : document.getPages()) {
                 try(PDDocument singlePage = new PDDocument()) {
                     singlePage.importPage(page);
-                    var byteArrayStream = new ByteArrayOutputStream();
-                    singlePage.save(byteArrayStream);
-                    byte[] pageBytes = byteArrayStream.toByteArray();
-                    pages.put(new ByteArrayInputStream(pageBytes), (long) pageBytes.length);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
+                    pages.add(fileTempService.writeToTempFile("page-", ".pdf", singlePage::save));
                 }
-            });
+            }
         } catch (IOException e) {
+            fileTempService.deleteQuietly(pages);
             throw new RuntimeException(e);
         }
         return pages;
     }
 
     @Override
-    public byte[] collectBookFromPages(List<InputStream> pages) {
-        try {
+    public Path collectBookFromPages(List<Path> pages) {
+        return fileTempService.writeToTempFile("merged-book",".pdf", fos -> {
             PDFMergerUtility mergerUtility = new PDFMergerUtility();
-            ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-            mergerUtility.setDestinationStream(byteArrayOutputStream);
-            for (InputStream page : pages) {
-                mergerUtility.addSource(RandomAccessReadBuffer.createBufferFromStream(page));
+            mergerUtility.setDestinationStream(fos);
+            for (Path page : pages) {
+                mergerUtility.addSource(page.toFile());
             }
-            mergerUtility.mergeDocuments(MemoryUsageSetting.setupMainMemoryOnly().streamCache);
-            return byteArrayOutputStream.toByteArray();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+            mergerUtility.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024).streamCache);
+        });
     }
 }
