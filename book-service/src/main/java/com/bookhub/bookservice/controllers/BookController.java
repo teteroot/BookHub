@@ -70,7 +70,7 @@ public class BookController {
         try(InputStream content = pdf.getInputStream()) {
             bookOrchestrator.createBookContent(uuid,userDetails.getUserId(),content);
         }
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok().build();
     }
 
 }

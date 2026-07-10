@@ -245,7 +245,7 @@ class BookControllerTest {
 
         mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
                         .file(file))
-                .andExpect(status().isNoContent());
+                .andExpect(status().isOk());
 
         verify(pdfValidator).validateBookPDF(any());
         verify(bookOrchestrator).createBookContent(eq(uuid), any(), any());
