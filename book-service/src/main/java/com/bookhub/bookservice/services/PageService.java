@@ -13,4 +13,6 @@ public interface PageService {
     void updatePageFilePath(UUID pageId, String path);
     UUID addNewPageToBook(Book book, int index);
     List<Page> loadBookPagesSortedByPageNumber(UUID bookId);
+
+    Page claimPageForUpload(UUID bookId, Integer pageNumber);
 }

@@ -1,10 +1,7 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
-import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
-import com.bookhub.bookservice.exceptions.extensions.BookContentNotFoundException;
-import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
-import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
+import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.services.*;
@@ -92,6 +89,30 @@ public class BookOrchestratorImpl implements BookOrchestrator {
 
         bookManagementService.updateBookStatus(bookId, BookStatus.DRAFT);
 
+    }
+
+    @Override
+    public void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content) {
+        var book = bookManagementService.loadBookByUUID(bookId);
+        if (!book.getAuthorId().equals(authorId)){
+            throw new BookAccessDeniedException();
+        }
+        if (!book.getStatus().equals(BookStatus.DRAFT)){
+            throw new BookNotDraftingException();
+        }
+        var page = pageService.claimPageForUpload(bookId, pageNumber);
+
+        var pageFiles = pdfService.loadPages(content);
+        if (pageFiles.size() != 1){
+            throw new TooManyPagesException(1);
+        }
+        var pagePath = pageFiles.getFirst();
+        try(InputStream pageStream = fileTempService.openStream(pagePath)) {
+            long pageSize = fileTempService.sizeOf(pagePath);
+            bookStorageService.updatePageContent(page.getS3FilePath(),pageStream, pageSize);
+        } catch (Exception e) {
+            throw new ContentSaveException();
+        }
     }
 
     private void removeAllBookPages(UUID bookId) {

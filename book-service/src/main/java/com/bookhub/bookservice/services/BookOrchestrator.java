@@ -11,6 +11,7 @@ public interface BookOrchestrator {
     Book loadBookByUUID(UUID uuid);
     void createBook(Book book, UUID authorId);
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
+    void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content);
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
     Integer getCountOfPages(UUID uuid);
     InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber);

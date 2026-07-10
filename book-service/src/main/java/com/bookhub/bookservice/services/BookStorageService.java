@@ -12,4 +12,6 @@ public interface BookStorageService {
     void removeBookContent(UUID bookId);
 
     String createBookContent(UUID bookId,InputStream content, Long size);
+
+    void updatePageContent(String s3FilePath, InputStream pageStream, long pageSize);
 }

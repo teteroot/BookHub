@@ -1,14 +1,17 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.exceptions.extensions.BookConcurrentModificationException;
 import com.bookhub.bookservice.exceptions.extensions.PageNotFoundException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.repositories.PageRepository;
 import com.bookhub.bookservice.services.PageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -53,6 +56,19 @@ public class PageServiceImpl implements PageService {
     @Override
     public List<Page> loadBookPagesSortedByPageNumber(UUID bookId) {
         return pageRepository.findAllByBook_IdOrderByPageNumber(bookId);
+    }
+
+    @Override
+    public Page claimPageForUpload(UUID bookId, Integer pageNumber) {
+        var page = pageRepository.findByBook_IdAndPageNumber(bookId, pageNumber)
+                .orElseThrow(PageNotFoundException::new);
+        page.setUpdatedAt(Instant.now());
+        try {
+            pageRepository.saveAndFlush(page);
+        } catch (ObjectOptimisticLockingFailureException e){
+            throw new BookConcurrentModificationException();
+        }
+        return page;
     }
 
 

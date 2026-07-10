@@ -69,6 +69,22 @@ public class BookStorageServiceImpl implements BookStorageService {
     }
 
     @Override
+    public void updatePageContent(String s3FilePath, InputStream pageStream, long pageSize) {
+        try {
+            s3Template.upload(storageProperties.getBucketName(),
+                    s3FilePath,
+                    pageStream,
+                    ObjectMetadata.builder()
+                            .contentType(storageProperties.getContentType())
+                            .contentLength(pageSize)
+                            .build()
+            );
+        } catch (RuntimeException e) {
+            throw new ContentSaveException();
+        }
+    }
+
+    @Override
     public InputStream loadContent(String path) {
         try {
             var load = s3Template.download(storageProperties.getBucketName(), path);
