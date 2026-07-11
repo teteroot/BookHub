@@ -42,9 +42,9 @@ public class PageController {
     public ResponseEntity<Void> updatePageByPageNumber(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                        @PathVariable UUID bookId,
                                                        @PathVariable Integer pageNumber,
-                                                       @RequestBody MultipartFile pageContent) throws IOException {
-        pdfValidator.validateBookPDF(pageContent);
-        try(InputStream content = pageContent.getInputStream()) {
+                                                       @RequestParam MultipartFile pdf) throws IOException {
+        pdfValidator.validateBookPDF(pdf);
+        try(InputStream content = pdf.getInputStream()) {
             bookOrchestrator.updatePageContent( userDetails.getUserId() ,bookId, pageNumber, content);
         }
         return ResponseEntity.ok().build();
