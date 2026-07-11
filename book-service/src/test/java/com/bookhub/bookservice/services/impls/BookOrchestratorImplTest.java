@@ -262,7 +262,7 @@ class BookOrchestratorImplTest {
         bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
 
         verify(bookManagementService).removeAllPages(bookId);
-        verify(bookStorageService).removeBookContent(bookId);
+        verify(bookStorageService).removeBook(bookId);
         verify(bookManagementService).updateBookStatus(bookId, BookStatus.DRAFT);
     }
 
@@ -313,7 +313,7 @@ class BookOrchestratorImplTest {
                 () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
 
         verify(bookManagementService).removeAllPages(bookId);
-        verify(bookStorageService).removeBookContent(bookId);
+        verify(bookStorageService).removeBook(bookId);
         verify(bookManagementService, never()).updateBookStatus(any(), any());
     }
 
@@ -338,7 +338,7 @@ class BookOrchestratorImplTest {
         assertThrows(ContentSaveException.class,
                 () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
 
-        verify(bookStorageService).removeBookContent(bookId);
+        verify(bookStorageService).removeBook(bookId);
     }
 
     @Test
