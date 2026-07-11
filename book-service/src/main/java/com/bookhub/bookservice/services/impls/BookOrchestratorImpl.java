@@ -101,17 +101,24 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             throw new BookNotDraftingException();
         }
         var page = pageService.claimPageForUpload(bookId, pageNumber);
-
         var pageFiles = pdfService.loadPages(content);
-        if (pageFiles.size() != 1){
-            throw new TooManyPagesException(1);
-        }
-        var pagePath = pageFiles.getFirst();
-        try(InputStream pageStream = fileTempService.openStream(pagePath)) {
-            long pageSize = fileTempService.sizeOf(pagePath);
-            bookStorageService.updatePageContent(page.getS3FilePath(),pageStream, pageSize);
+        try {
+            if (pageFiles.size() != 1){
+                throw new TooManyPagesException(1);
+            }
+            bookManagementService.removeContentPath(bookId);
+            var pagePath = pageFiles.getFirst();
+            try(InputStream pageStream = fileTempService.openStream(pagePath)) {
+                long pageSize = fileTempService.sizeOf(pagePath);
+                bookStorageService.updatePageContent(page.getS3FilePath(), pageStream, pageSize);
+            }
+        } catch (TooManyPagesException e) {
+            throw e;
         } catch (Exception e) {
+            log.error("Failed to update page {} content for bookId {}", pageNumber, bookId, e);
             throw new ContentSaveException();
+        } finally {
+            fileTempService.deleteQuietly(pageFiles);
         }
     }
 
@@ -120,7 +127,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             bookManagementService.removeAllPages(bookId);
         } catch (Exception ignored){}
         try {
-            bookStorageService.removeBookContent(bookId);
+            bookStorageService.removeBook(bookId);
         } catch (Exception ignored) {}
     }
 

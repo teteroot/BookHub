@@ -77,4 +77,11 @@ public class BookManagementServiceImpl implements BookManagementService {
         book.setS3ArchivePath(path);
     }
 
+    @Override
+    @Transactional
+    public void removeContentPath(UUID bookId) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.setS3ArchivePath(null);
+    }
+
 }

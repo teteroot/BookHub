@@ -16,4 +16,6 @@ public interface BookManagementService {
     void updateBookStatus(UUID bookId, BookStatus bookStatus);
 
     void updateBookContentPath(UUID bookId,String path);
+
+    void removeContentPath(UUID bookId);
 }
