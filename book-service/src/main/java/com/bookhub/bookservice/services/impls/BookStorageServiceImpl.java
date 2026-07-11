@@ -7,6 +7,7 @@ import com.bookhub.bookservice.services.BookStorageService;
 import io.awspring.cloud.s3.ObjectMetadata;
 import io.awspring.cloud.s3.S3Template;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.Delete;
@@ -16,6 +17,7 @@ import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import java.io.InputStream;
 import java.util.UUID;
 
+@Slf4j
 @RequiredArgsConstructor
 @Service
 public class BookStorageServiceImpl implements BookStorageService {
@@ -63,6 +65,7 @@ public class BookStorageServiceImpl implements BookStorageService {
                             .build()
             );
         } catch (RuntimeException e) {
+            log.error("Failed to create book content in S3 for path: {}", path, e);
             throw new ContentSaveException();
         }
         return path;
@@ -80,6 +83,7 @@ public class BookStorageServiceImpl implements BookStorageService {
                             .build()
             );
         } catch (RuntimeException e) {
+            log.error("Failed to update page content in S3 for path: {}", s3FilePath, e);
             throw new ContentSaveException();
         }
     }
@@ -90,12 +94,13 @@ public class BookStorageServiceImpl implements BookStorageService {
             var load = s3Template.download(storageProperties.getBucketName(), path);
             return load.getInputStream();
         } catch (Exception e) {
+            log.error("Failed to load content from S3 for path: {}", path, e);
             throw new ContentLoadException();
         }
     }
 
     @Override
-    public void removeBookContent(UUID bookId) {
+    public void removeBook(UUID bookId) {
 
         var path = "%s/".formatted(storageProperties.getDestination().formatted(bookId));
         var toDelete = s3Template.listObjects(storageProperties.getBucketName(),path);
@@ -109,6 +114,7 @@ public class BookStorageServiceImpl implements BookStorageService {
 
             s3Client.deleteObjects(dor);
         } catch (Exception e) {
+            log.error("Failed to delete object from S3 for path: {}", path, e);
             throw new ContentSaveException();
         }
     }

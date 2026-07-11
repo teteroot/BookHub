@@ -9,7 +9,7 @@ public interface BookStorageService {
 
     InputStream loadContent(String path);
 
-    void removeBookContent(UUID bookId);
+    void removeBook(UUID bookId);
 
     String createBookContent(UUID bookId,InputStream content, Long size);
 
