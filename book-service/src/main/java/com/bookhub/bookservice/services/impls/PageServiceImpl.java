@@ -1,6 +1,6 @@
 package com.bookhub.bookservice.services.impls;
 
-import com.bookhub.bookservice.exceptions.extensions.BookConcurrentModificationException;
+import com.bookhub.bookservice.exceptions.extensions.PageConcurrentModificationException;
 import com.bookhub.bookservice.exceptions.extensions.PageNotFoundException;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
@@ -59,6 +59,7 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    @Transactional
     public Page claimPageForUpload(UUID bookId, Integer pageNumber) {
         var page = pageRepository.findByBook_IdAndPageNumber(bookId, pageNumber)
                 .orElseThrow(PageNotFoundException::new);
@@ -66,7 +67,7 @@ public class PageServiceImpl implements PageService {
         try {
             pageRepository.saveAndFlush(page);
         } catch (ObjectOptimisticLockingFailureException e){
-            throw new BookConcurrentModificationException();
+            throw new PageConcurrentModificationException();
         }
         return page;
     }

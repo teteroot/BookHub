@@ -25,6 +25,7 @@ CREATE TABLE book_pages (
     s3_patch_path VARCHAR(512),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
+    version BIGINT NOT NULL DEFAULT 0,
         CONSTRAINT fk_book_pages_book
             FOREIGN KEY (book_id)
                 REFERENCES books (id)
@@ -37,4 +38,3 @@ CREATE INDEX idx_book_pages_book_source
     ON book_pages (book_id);
 CREATE UNIQUE INDEX uq_book_id_page_number
     ON book_pages (book_id, page_number);
-

@@ -62,6 +62,10 @@ public class Page {
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
+    @Version
+    @Column(name = "version")
+    private Long version;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
