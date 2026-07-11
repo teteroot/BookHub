@@ -1,19 +1,19 @@
 package com.bookhub.bookservice.controllers;
 
 import com.bookhub.bookservice.config.SecurityConfig;
-import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
-import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
-import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
-import com.bookhub.bookservice.exceptions.extensions.PageNotFoundException;
+import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.security.TestUserDetailsService;
 import com.bookhub.bookservice.services.BookOrchestrator;
+import com.bookhub.bookservice.validators.PDFValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -23,9 +23,11 @@ import org.springframework.web.context.WebApplicationContext;
 import java.io.InputStream;
 import java.util.UUID;
 
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(PageController.class)
@@ -34,6 +36,9 @@ class PageControllerTest {
 
     @MockitoBean
     private BookOrchestrator bookOrchestrator;
+
+    @MockitoBean
+    private PDFValidator pdfValidator;
 
     @Autowired
     private MockMvc mockMvc;
@@ -125,4 +130,87 @@ class PageControllerTest {
                 .andExpect(jsonPath("$.message").value("Failed to load book content"));
     }
 
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testSuccessfulUpdatePageByPageNumber() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isOk());
+    }
+
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testInvalidUpdatePageByPageNumber() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        doThrow(new PDFValidationException()).when(pdfValidator).validateBookPDF(file);
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Incorrect PDF file format"));
+    }
+
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateNotAccessiblePageByPageNumber() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        doThrow(new BookAccessDeniedException())
+                .when(bookOrchestrator).updatePageContent(eq(testUserDetailsService.getUserId()), eq(uuid), eq(5), any(InputStream.class));
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("This is not your book"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdatePageWithNonDraftStatusByPageNumber() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        doThrow(new BookNotDraftingException())
+                .when(bookOrchestrator).updatePageContent(eq(testUserDetailsService.getUserId()), eq(uuid), eq(5), any(InputStream.class));
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Book status isn't \"Draft\""));
+    }
+
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateTooManyPagesByPageNumber() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        doThrow(new TooManyPagesException(1))
+                .when(bookOrchestrator).updatePageContent(eq(testUserDetailsService.getUserId()), eq(uuid), eq(5), any(InputStream.class));
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Uploaded content must contain exactly 1 page"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdatePageByPageNumberWithServerError() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
+        doThrow(new ContentSaveException())
+                .when(bookOrchestrator).updatePageContent(eq(testUserDetailsService.getUserId()), eq(uuid), eq(5), any(InputStream.class));
+        mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,5)
+                        .file(file))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Failed to save book content"));
+    }
 }
