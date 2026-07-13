@@ -89,6 +89,41 @@ public class BookStorageServiceImpl implements BookStorageService {
     }
 
     @Override
+    public String createBookCover(UUID bookId, String extension, InputStream is, long size) {
+        var path = "%s%s%s".formatted(
+                storageProperties.getDestination().formatted(bookId),
+                storageProperties.getCoverDestination(),
+                extension
+        );
+
+        try {
+            s3Template.upload(storageProperties.getBucketName(),
+                    path,
+                    is,
+                    ObjectMetadata.builder()
+                            .contentType(storageProperties.getContentType())
+                            .contentLength(size)
+                            .build()
+            );
+        } catch (RuntimeException e) {
+            log.error("Failed to update book cover in S3 for path: {}", path, e);
+            throw new ContentSaveException();
+        }
+        return path;
+
+    }
+
+    @Override
+    public void removeBookCover(String coverPath) {
+        try {
+            s3Template.deleteObject(storageProperties.getBucketName(), coverPath);
+        } catch (RuntimeException e) {
+            log.error("Failed to delete book cover in S3 for path: {}", coverPath, e);
+            throw new ContentSaveException();
+        }
+    }
+
+    @Override
     public InputStream loadContent(String path) {
         try {
             var load = s3Template.download(storageProperties.getBucketName(), path);
