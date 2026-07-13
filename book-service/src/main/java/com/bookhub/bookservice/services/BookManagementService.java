@@ -8,7 +8,9 @@ import java.util.UUID;
 public interface BookManagementService {
 
     Book loadBookByUUID(UUID uuid);
+    Book loadAuthorBookByUUID(UUID bookId, UUID authorId);
     Book claimBookForUpload(UUID bookId, UUID authorId);
+
     void createBook(Book book);
 
     void removeAllPages(UUID bookId);
@@ -18,4 +20,6 @@ public interface BookManagementService {
     void updateBookContentPath(UUID bookId,String path);
 
     void removeContentPath(UUID bookId);
+
+    void updateBookCoverPath(UUID bookId, String coverPath);
 }

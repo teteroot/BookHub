@@ -27,6 +27,16 @@ public class BookManagementServiceImpl implements BookManagementService {
     }
 
     @Override
+    public Book loadAuthorBookByUUID(UUID bookId, UUID authorId) {
+        var book = bookRepository.findById(bookId)
+                .orElseThrow(BookNotFoundException::new);
+        if (!book.getAuthorId().equals(authorId)){
+            throw new BookAccessDeniedException();
+        }
+        return book;
+    }
+
+    @Override
     @Transactional
     public Book claimBookForUpload(UUID bookId, UUID authorId) {
         var book = bookRepository.findById(bookId)
@@ -82,6 +92,13 @@ public class BookManagementServiceImpl implements BookManagementService {
     public void removeContentPath(UUID bookId) {
         var book = bookRepository.getReferenceById(bookId);
         book.setS3ArchivePath(null);
+    }
+
+    @Override
+    @Transactional
+    public void updateBookCoverPath(UUID bookId, String coverPath) {
+        var book = bookRepository.getReferenceById(bookId);
+        book.setS3CoverPath(coverPath);
     }
 
 }
