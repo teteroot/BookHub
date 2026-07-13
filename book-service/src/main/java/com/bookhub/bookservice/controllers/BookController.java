@@ -5,6 +5,7 @@ import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.security.GatewayUserDetails;
 import com.bookhub.bookservice.services.BookOrchestrator;
+import com.bookhub.bookservice.validators.CoverValidator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -30,6 +31,7 @@ public class BookController {
 
     private final BookMapper bookMapper;
     private final BookOrchestrator bookOrchestrator;
+    private final CoverValidator coverValidator;
     private final PDFValidator pdfValidator;
 
     @GetMapping("/{uuid}")
@@ -50,6 +52,18 @@ public class BookController {
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf")
                 .body(new InputStreamResource(bookStream));
+    }
+
+    @PatchMapping("/{uuid}/cover")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> updateBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                    @PathVariable UUID uuid,
+                                                    @RequestParam MultipartFile cover) throws IOException {
+
+        var type = coverValidator.getCoverMediaType(cover);
+        coverValidator.validateCoverMedia(type,cover.getBytes());
+        bookOrchestrator.updateBookCover(userDetails.getUserId(),uuid,cover.getBytes(), type);
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping
