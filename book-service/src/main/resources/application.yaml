@@ -25,6 +25,11 @@ spring:
       destination: books/%s
       page-destination: /pages
       file-extension: .pdf
+      cover-destination: /cover
+    cover:
+      supported-types:
+        - image/webp
+        - application/pdf
 server:
   port: 8002
 security:

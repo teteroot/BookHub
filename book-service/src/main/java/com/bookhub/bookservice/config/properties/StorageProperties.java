@@ -14,4 +14,5 @@ public class StorageProperties {
     private String destination;
     private String pageDestination;
     private String fileExtension;
+    private String coverDestination;
 }
