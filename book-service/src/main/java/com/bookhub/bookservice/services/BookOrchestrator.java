@@ -2,6 +2,7 @@ package com.bookhub.bookservice.services;
 
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
+import org.springframework.http.MediaType;
 
 import java.io.InputStream;
 import java.util.UUID;
@@ -15,4 +16,6 @@ public interface BookOrchestrator {
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
     Integer getCountOfPages(UUID uuid);
     InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber);
+
+    void updateBookCover(UUID authorId, UUID uuid, byte[] bytes, MediaType type);
 }

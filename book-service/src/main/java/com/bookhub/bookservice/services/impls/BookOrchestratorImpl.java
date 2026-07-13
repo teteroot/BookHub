@@ -7,8 +7,10 @@ import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.services.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -47,6 +49,24 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         }
         var page = pageService.loadPageByBookIdAndPageNumber(bookId, pageNumber);
         return bookStorageService.loadContent(page.getS3FilePath());
+    }
+
+    @Override
+    public void updateBookCover(UUID authorId, UUID uuid, byte[] bytes, MediaType type) {
+        var book = bookManagementService.loadAuthorBookByUUID(uuid, authorId);
+        var extension = ".%s".formatted(type.getSubtype());
+        var oldCoverPath = book.getS3CoverPath();
+        var coverPath = bookStorageService.createBookCover(book.getId(),extension, new ByteArrayInputStream(bytes), bytes.length);
+
+        try {
+            bookManagementService.updateBookCoverPath(uuid, coverPath);
+        } catch (Exception e) {
+            bookStorageService.removeBookCover(coverPath);
+            throw new ContentSaveException();
+        }
+        if (oldCoverPath != null &&  !oldCoverPath.equals(coverPath)){
+            bookStorageService.removeBookCover(oldCoverPath);
+        }
     }
 
     @Override
@@ -93,10 +113,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
 
     @Override
     public void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content) {
-        var book = bookManagementService.loadBookByUUID(bookId);
-        if (!book.getAuthorId().equals(authorId)){
-            throw new BookAccessDeniedException();
-        }
+        var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
         }
