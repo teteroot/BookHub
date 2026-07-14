@@ -59,10 +59,13 @@ public class BookController {
     public ResponseEntity<Void> updateBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                     @PathVariable UUID uuid,
                                                     @RequestParam MultipartFile cover) throws IOException {
-
         var type = coverValidator.getCoverMediaType(cover);
-        coverValidator.validateCoverMedia(type,cover.getBytes());
-        bookOrchestrator.updateBookCover(userDetails.getUserId(),uuid,cover.getBytes(), type);
+        try(InputStream coverStream = cover.getInputStream()){
+            coverValidator.validateCoverMedia(type,coverStream);
+        }
+        try(InputStream coverStream = cover.getInputStream()) {
+            bookOrchestrator.updateBookCover(userDetails.getUserId(),uuid,coverStream,cover.getSize(), type);
+        }
         return ResponseEntity.ok().build();
     }
 
