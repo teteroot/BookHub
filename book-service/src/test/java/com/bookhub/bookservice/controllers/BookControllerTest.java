@@ -10,6 +10,7 @@ import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.security.TestUserDetailsService;
 import com.bookhub.bookservice.services.BookOrchestrator;
+import com.bookhub.bookservice.validators.CoverValidator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class BookControllerTest {
 
     @MockitoBean
     private PDFValidator pdfValidator;
+
+    @MockitoBean
+    private CoverValidator coverValidator;
 
     @MockitoBean
     private BookOrchestrator bookOrchestrator;
