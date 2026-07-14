@@ -3,6 +3,7 @@ package com.bookhub.bookservice.services.impls;
 import com.bookhub.bookservice.config.properties.StorageProperties;
 import com.bookhub.bookservice.exceptions.extensions.ContentLoadException;
 import com.bookhub.bookservice.exceptions.extensions.ContentSaveException;
+import com.bookhub.bookservice.exceptions.extensions.CoverSaveException;
 import com.bookhub.bookservice.services.BookStorageService;
 import io.awspring.cloud.s3.ObjectMetadata;
 import io.awspring.cloud.s3.S3Template;
@@ -89,7 +90,7 @@ public class BookStorageServiceImpl implements BookStorageService {
     }
 
     @Override
-    public String createBookCover(UUID bookId, String extension, InputStream is, long size) {
+    public String createBookCover(UUID bookId, String extension, String contentType, InputStream is, long size) {
         var path = "%s%s%s".formatted(
                 storageProperties.getDestination().formatted(bookId),
                 storageProperties.getCoverDestination(),
@@ -101,13 +102,13 @@ public class BookStorageServiceImpl implements BookStorageService {
                     path,
                     is,
                     ObjectMetadata.builder()
-                            .contentType(storageProperties.getContentType())
+                            .contentType(contentType)
                             .contentLength(size)
                             .build()
             );
         } catch (RuntimeException e) {
             log.error("Failed to update book cover in S3 for path: {}", path, e);
-            throw new ContentSaveException();
+            throw new CoverSaveException();
         }
         return path;
 
@@ -117,9 +118,8 @@ public class BookStorageServiceImpl implements BookStorageService {
     public void removeBookCover(String coverPath) {
         try {
             s3Template.deleteObject(storageProperties.getBucketName(), coverPath);
-        } catch (RuntimeException e) {
-            log.error("Failed to delete book cover in S3 for path: {}", coverPath, e);
-            throw new ContentSaveException();
+        } catch (RuntimeException ignored) {
+            log.error("Failed to delete book cover in S3 for path: {}", coverPath);
         }
     }
 

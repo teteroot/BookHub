@@ -15,7 +15,7 @@ public interface BookStorageService {
 
     void updatePageContent(String s3FilePath, InputStream pageStream, long pageSize);
 
-    String createBookCover(UUID bookId, String extension, InputStream is, long size);
+    String createBookCover(UUID bookId, String extension, String contentType, InputStream is, long size);
 
     void removeBookCover(String coverPath);
 }
