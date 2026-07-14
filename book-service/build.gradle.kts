@@ -29,6 +29,7 @@ dependencies {
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 	implementation("org.apache.pdfbox:pdfbox:3.0.5")
 	implementation("org.apache.tika:tika-core:3.3.1")
+	implementation("com.twelvemonkeys.imageio:imageio-webp:3.13.0")
 	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
