@@ -38,15 +38,13 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     @Transactional
-    public Book claimBookForUpload(UUID bookId, UUID authorId) {
+    public Book claimBookForUpdate(UUID bookId, UUID authorId) {
         var book = bookRepository.findById(bookId)
                 .orElseThrow(BookNotFoundException::new);
         if (!book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
-        if (!book.getStatus().equals(BookStatus.EMPTY)) {
-            throw new BookContentAlreadyExistException();
-        }
+
         book.setUpdatedAt(Instant.now());
         try {
             bookRepository.saveAndFlush(book);
