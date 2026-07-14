@@ -14,8 +14,14 @@ import java.util.Set;
 public class CoverProperties {
 
     private Set<MediaType> supportedTypes;
+    private Double targetRatio;
+    private Double ratioTolerance;
 
-    public void setContentTypes(Set<String> supportedTypes) {
+    public void setTargetRatio(String targetRatio) {
+        this.targetRatio = Double.valueOf(targetRatio);
+    }
+
+    public void setSupportedTypes(Set<String> supportedTypes) {
         this.supportedTypes = new HashSet<>();
         for (String type : supportedTypes) {
             this.supportedTypes.add(MediaType.parseMediaType(type));

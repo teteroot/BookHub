@@ -30,6 +30,8 @@ spring:
       supported-types:
         - image/webp
         - application/pdf
+      target-ratio: '0.70710678' # ~ √2/2, base A4 format
+      ratio-tolerance: 0.02
 server:
   port: 8002
 security:
