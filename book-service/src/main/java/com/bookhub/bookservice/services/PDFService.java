@@ -8,5 +8,5 @@ public interface PDFService {
 
     List<Path> loadPages(InputStream content);
     Path collectBookFromPages(List<Path> pages);
-
+    int getCountOfPages(InputStream content);
 }

@@ -51,4 +51,13 @@ public class PDFServiceImpl implements PDFService {
             mergerUtility.mergeDocuments(MemoryUsageSetting.setupMixed(10 * 1024 * 1024).streamCache);
         });
     }
+
+    @Override
+    public int getCountOfPages(InputStream content) {
+        try (PDDocument document = Loader.loadPDF(RandomAccessReadBuffer.createBufferFromStream(content))){
+            return document.getNumberOfPages();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
