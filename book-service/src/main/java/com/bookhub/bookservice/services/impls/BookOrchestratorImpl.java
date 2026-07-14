@@ -7,10 +7,10 @@ import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.services.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -52,17 +52,17 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void updateBookCover(UUID authorId, UUID uuid, byte[] bytes, MediaType type) {
-        var book = bookManagementService.loadAuthorBookByUUID(uuid, authorId);
+    public void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type) {
+        var book = bookManagementService.claimBookForUpdate(uuid, authorId);
         var extension = ".%s".formatted(type.getSubtype());
         var oldCoverPath = book.getS3CoverPath();
-        var coverPath = bookStorageService.createBookCover(book.getId(),extension, new ByteArrayInputStream(bytes), bytes.length);
-
+        var coverPath = bookStorageService.createBookCover(book.getId(),extension, type.toString(), coverStream , coverSize);
         try {
             bookManagementService.updateBookCoverPath(uuid, coverPath);
-        } catch (Exception e) {
+        } catch (DataAccessException e) {
             bookStorageService.removeBookCover(coverPath);
-            throw new ContentSaveException();
+            log.error("Failed to update book path at {}", book.getId(), e);
+            throw new CoverSaveException();
         }
         if (oldCoverPath != null &&  !oldCoverPath.equals(coverPath)){
             bookStorageService.removeBookCover(oldCoverPath);
@@ -83,7 +83,10 @@ public class BookOrchestratorImpl implements BookOrchestrator {
 
     @Override
     public void createBookContent(UUID bookId, UUID authorId, InputStream content) {
-        var book = bookManagementService.claimBookForUpload(bookId, authorId);
+        var book = bookManagementService.claimBookForUpdate(bookId, authorId);
+        if (!book.getStatus().equals(BookStatus.EMPTY)) {
+            throw new BookContentAlreadyExistException();
+        }
         if (pageService.getCountOfPages(bookId) > 0){
             removeAllBookPages(bookId);
         }
