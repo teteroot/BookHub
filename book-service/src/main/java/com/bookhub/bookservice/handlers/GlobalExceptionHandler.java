@@ -56,4 +56,10 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(errorResponse);
     }
 
+    @ExceptionHandler(UnsupportedMediaTypeException.class)
+    public ResponseEntity<ErrorResponseDto> handleUnsupportedMediaTypeException(UnsupportedMediaTypeException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 415);
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(errorResponse);
+    }
+
 }
