@@ -62,7 +62,7 @@ class BookManagementServiceImplTest {
     }
 
     @Test
-    void testClaimBookForUpload_success() {
+    void testClaimBookForUpdate_success() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
         var book = Book.builder()
@@ -72,7 +72,7 @@ class BookManagementServiceImplTest {
                 .build();
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
-        var result = bookManagementService.claimBookForUpload(bookId, authorId);
+        var result = bookManagementService.claimBookForUpdate(bookId, authorId);
 
         assertEquals(book, result);
         assertNotNull(result.getUpdatedAt());
@@ -85,12 +85,12 @@ class BookManagementServiceImplTest {
         when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
 
         assertThrows(BookNotFoundException.class,
-                () -> bookManagementService.claimBookForUpload(bookId, UUID.randomUUID()));
+                () -> bookManagementService.claimBookForUpdate(bookId, UUID.randomUUID()));
         verify(bookRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void testClaimBookForUpload_notOwner_throwsAccessDenied() {
+    void testClaimBookForUpdate_notOwner_throwsAccessDenied() {
         var bookId = UUID.randomUUID();
         var book = Book.builder()
                 .id(bookId)
@@ -100,12 +100,12 @@ class BookManagementServiceImplTest {
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
         assertThrows(BookAccessDeniedException.class,
-                () -> bookManagementService.claimBookForUpload(bookId, UUID.randomUUID()));
+                () -> bookManagementService.claimBookForUpdate(bookId, UUID.randomUUID()));
         verify(bookRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void testClaimBookForUpload_statusNotEmpty_throwsContentAlreadyExist() {
+    void testClaimBookForUpdate_statusNotEmpty_throwsContentAlreadyExist() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
         var book = Book.builder()
@@ -116,12 +116,12 @@ class BookManagementServiceImplTest {
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
         assertThrows(BookContentAlreadyExistException.class,
-                () -> bookManagementService.claimBookForUpload(bookId, authorId));
+                () -> bookManagementService.claimBookForUpdate(bookId, authorId));
         verify(bookRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void testClaimBookForUpload_concurrentModification_throwsCustomException() {
+    void testClaimBookForUpdate_concurrentModification_throwsCustomException() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
         var book = Book.builder()
@@ -133,7 +133,7 @@ class BookManagementServiceImplTest {
         when(bookRepository.saveAndFlush(book)).thenThrow(ObjectOptimisticLockingFailureException.class);
 
         assertThrows(BookConcurrentModificationException.class,
-                () -> bookManagementService.claimBookForUpload(bookId, authorId));
+                () -> bookManagementService.claimBookForUpdate(bookId, authorId));
     }
 
     @Test

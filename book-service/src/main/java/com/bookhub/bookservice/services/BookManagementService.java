@@ -9,7 +9,7 @@ public interface BookManagementService {
 
     Book loadBookByUUID(UUID uuid);
     Book loadAuthorBookByUUID(UUID bookId, UUID authorId);
-    Book claimBookForUpload(UUID bookId, UUID authorId);
+    Book claimBookForUpdate(UUID bookId, UUID authorId);
 
     void createBook(Book book);
 
