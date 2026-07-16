@@ -27,8 +27,11 @@ spring:
       file-extension: .pdf
       cover-destination: /cover
     cover:
+      common-type: image/webp
+      dpi: 150
       supported-types:
         - image/webp
+        - image/png
         - image/jpeg
       target-ratio: '0.70710678' # ~ √2/2, base A4 format
       ratio-tolerance: 0.02

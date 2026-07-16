@@ -17,4 +17,6 @@ public interface BookOrchestrator {
     Integer getCountOfPages(UUID uuid);
     InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber);
     void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type);
+    InputStream loadBookCoverStream(UUID authorId, UUID bookId);
+    MediaType loadBookCoverContentType();
 }

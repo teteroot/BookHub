@@ -11,6 +11,7 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -27,6 +28,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     private final PDFService pdfService;
     private final PageService pageService;
     private final FileTempService fileTempService;
+    private final ImageService imageService;
 
     @Override
     public InputStream loadBookStream(UUID authorId, UUID bookId) {
@@ -54,19 +56,68 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type) {
         var book = bookManagementService.claimBookForUpdate(uuid, authorId);
-        var extension = ".%s".formatted(type.getSubtype());
         var oldCoverPath = book.getS3CoverPath();
-        var coverPath = bookStorageService.createBookCover(book.getId(),extension, type.toString(), coverStream , coverSize);
-        try {
-            bookManagementService.updateBookCoverPath(uuid, coverPath);
-        } catch (DataAccessException e) {
-            bookStorageService.removeBookCover(coverPath);
-            log.error("Failed to update book path at {}", book.getId(), e);
-            throw new CoverSaveException();
+        var commonType = imageService.getCommonCoverType();
+        var extension = ".%s".formatted(commonType.getSubtype());
+        String coverPath;
+        if (type.equals(commonType)){
+            coverPath = updateCover(book.getId(), extension, coverStream, coverSize, type);
+        }else {
+            List<Path> tempFiles = new ArrayList<>();
+            try {
+                var tempFile = fileTempService.writeToTempFile("cover-",
+                        extension,
+                        os -> imageService.convertToCommonFormat(coverStream, os)
+                );
+                tempFiles.add(tempFile);
+                try(InputStream stream = fileTempService.openStream(tempFile)) {
+                    coverPath = updateCover(book.getId(),
+                            extension,
+                            stream,
+                            fileTempService.sizeOf(tempFile),
+                            commonType
+                    );
+                }
+            } catch (IOException e) {
+                throw new CoverSaveException();
+            }
+            finally {
+                fileTempService.deleteQuietly(tempFiles);
+            }
         }
         if (oldCoverPath != null &&  !oldCoverPath.equals(coverPath)){
             bookStorageService.removeBookCover(oldCoverPath);
         }
+    }
+
+    private String updateCover(UUID bookId, String extension, InputStream coverStream, Long coverSize, MediaType type){
+        var coverPath = bookStorageService.createBookCover(bookId,extension, type.toString(), coverStream , coverSize);
+        try {
+            bookManagementService.updateBookCoverPath(bookId, coverPath);
+        } catch (DataAccessException e) {
+            bookStorageService.removeBookCover(coverPath);
+            log.error("Failed to update book path at {}", bookId, e);
+            throw new CoverSaveException();
+        }
+        return coverPath;
+    }
+
+    @Override
+    public InputStream loadBookCoverStream(UUID authorId, UUID bookId) {
+        var book = bookManagementService.loadBookByUUID(bookId);
+        if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
+            throw new BookAccessDeniedException();
+        }
+        var path = book.getS3CoverPath();
+        if (path == null){
+            path = cacheBookCoverFromFirstPage(bookId, imageService.getCommonCoverType());
+        }
+        return bookStorageService.loadContent(path);
+    }
+
+    @Override
+    public MediaType loadBookCoverContentType() {
+        return imageService.getCommonCoverType();
     }
 
     @Override
@@ -190,5 +241,37 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             if (bookPath != null) pageFiles.add(bookPath);
             fileTempService.deleteQuietly(pageFiles);
         }
+    }
+
+    private String cacheBookCoverFromFirstPage(UUID bookId, MediaType type) {
+        Page page;
+        try {
+            page = pageService.claimPageForUpload(bookId, 1);
+        } catch (PageNotFoundException e) {
+            throw new BookContentNotFoundException();
+        }
+        var tempFiles = new ArrayList<Path>();
+        try {
+            var pageFile = fileTempService.writeToTempFile("page-", ".pdf", os -> {
+                try(InputStream stream = bookStorageService.loadContent(page.getS3FilePath())) {
+                    stream.transferTo(os);
+                }
+            });
+            var imageFile = pdfService.convertSinglePageToImage(pageFile,type, imageService.getPdfDpi());
+            tempFiles.addAll(List.of(pageFile,  imageFile));
+            try (InputStream coverStream = fileTempService.openStream(imageFile)) {
+                return updateCover(bookId,
+                        ".%s".formatted(type.getSubtype()),
+                        coverStream,
+                        fileTempService.sizeOf(imageFile),
+                        type
+                );
+            }
+        } catch (Exception e) {
+            throw new CoverLoadException();
+        } finally {
+            fileTempService.deleteQuietly(tempFiles);
+        }
+
     }
 }
