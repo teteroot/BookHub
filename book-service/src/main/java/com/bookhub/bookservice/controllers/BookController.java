@@ -54,6 +54,17 @@ public class BookController {
                 .body(new InputStreamResource(bookStream));
     }
 
+    @GetMapping("/{uuid}/cover")
+    public ResponseEntity<Resource> getBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                 @PathVariable UUID uuid){
+        UUID authorId = userDetails != null ? userDetails.getUserId() : null;
+        var bookCoverStream = bookOrchestrator.loadBookCoverStream(authorId,uuid);
+        var contentType = bookOrchestrator.loadBookCoverContentType();
+        return ResponseEntity.ok()
+                .contentType(contentType)
+                .body(new InputStreamResource(bookCoverStream));
+    }
+
     @PatchMapping("/{uuid}/cover")
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> updateBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
