@@ -16,6 +16,12 @@ public class CoverProperties {
     private Set<MediaType> supportedTypes;
     private Double targetRatio;
     private Double ratioTolerance;
+    private Integer dpi;
+    private MediaType commonType;
+
+    public void setCommonType(String commonType) {
+        this.commonType = MediaType.parseMediaType(commonType);
+    }
 
     public void setTargetRatio(String targetRatio) {
         this.targetRatio = Double.valueOf(targetRatio);
