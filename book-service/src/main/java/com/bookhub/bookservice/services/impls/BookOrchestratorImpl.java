@@ -33,7 +33,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public InputStream loadBookStream(UUID authorId, UUID bookId) {
         var book = bookManagementService.loadBookByUUID(bookId);
-        if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
+        if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
         var path = book.getS3ArchivePath();
@@ -46,7 +46,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber) {
         var book = bookManagementService.loadBookByUUID(bookId);
-        if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(readerId)){
+        if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(readerId)){
             throw new BookAccessDeniedException();
         }
         var page = pageService.loadPageByBookIdAndPageNumber(bookId, pageNumber);
@@ -56,6 +56,9 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type) {
         var book = bookManagementService.claimBookForUpdate(uuid, authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)) {
+            throw new BookNotDraftingException();
+        }
         var oldCoverPath = book.getS3CoverPath();
         var commonType = imageService.getCommonCoverType();
         var extension = ".%s".formatted(commonType.getSubtype());
@@ -105,7 +108,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public InputStream loadBookCoverStream(UUID authorId, UUID bookId) {
         var book = bookManagementService.loadBookByUUID(bookId);
-        if (book.getStatus().equals(BookStatus.DRAFT) && !book.getAuthorId().equals(authorId)){
+        if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
         var path = book.getS3CoverPath();
@@ -121,8 +124,54 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public Book loadBookByUUID(UUID uuid) {
-        return bookManagementService.loadBookByUUID(uuid);
+    public void publishBook(UUID authorId, UUID bookId) {
+        var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)) {
+            throw new BookNotDraftingException(book.getStatus());
+        }
+        if (pageService.getCountOfPages(book.getId()) == 0){
+            throw new BookContentNotFoundException();
+        }
+        if (book.getS3ArchivePath() == null){
+            cacheBookContent(book.getId());
+        }
+        if (book.getS3CoverPath() == null) {
+            cacheBookCoverFromFirstPage(book.getId(), imageService.getCommonCoverType());
+        }
+        bookManagementService.updateBookStatus(book.getId(), BookStatus.PUBLISHED);
+    }
+
+    @Override
+    public void draftBook(UUID authorId, UUID bookId) {
+        var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
+        if (book.getStatus().equals(BookStatus.DRAFT)) {
+            throw new BookAlreadyRequireStatusException(BookStatus.DRAFT);
+        }
+        if (book.getStatus().equals(BookStatus.EMPTY)){
+            throw new BookContentNotFoundException();
+        }
+        bookManagementService.updateBookStatus(book.getId(), BookStatus.DRAFT);
+    }
+
+    @Override
+    public void archiveBook(UUID authorId, UUID bookId) {
+        var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
+        if (book.getStatus().equals(BookStatus.ARCHIVED)) {
+            throw new BookAlreadyRequireStatusException(BookStatus.ARCHIVED);
+        }
+        if (book.getStatus().equals(BookStatus.EMPTY)){
+            throw new BookContentNotFoundException();
+        }
+        bookManagementService.updateBookStatus(book.getId(), BookStatus.ARCHIVED);
+    }
+
+    @Override
+    public Book loadBookByUUID(UUID authorId,UUID uuid) {
+        var book = bookManagementService.loadBookByUUID(uuid);
+        if (!book.getAuthorId().equals(authorId) && !book.getStatus().equals(BookStatus.PUBLISHED)){
+            throw new BookAccessDeniedException();
+        }
+        return book;
     }
 
     @Override

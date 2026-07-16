@@ -9,7 +9,7 @@ import java.util.UUID;
 
 public interface BookOrchestrator {
     InputStream loadBookStream(UUID authorId, UUID bookId);
-    Book loadBookByUUID(UUID uuid);
+    Book loadBookByUUID(UUID authorId,UUID uuid);
     void createBook(Book book, UUID authorId);
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
     void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content);
@@ -19,4 +19,7 @@ public interface BookOrchestrator {
     void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type);
     InputStream loadBookCoverStream(UUID authorId, UUID bookId);
     MediaType loadBookCoverContentType();
+    void publishBook(UUID authorId, UUID bookId);
+    void draftBook(UUID authorId, UUID bookId);
+    void archiveBook(UUID authorId, UUID bookId);
 }

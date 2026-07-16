@@ -35,8 +35,10 @@ public class BookController {
     private final PDFValidator pdfValidator;
 
     @GetMapping("/{uuid}")
-    public ResponseEntity<BookResponseDto> getBook(@PathVariable UUID uuid){
-        var book = bookOrchestrator.loadBookByUUID(uuid);
+    public ResponseEntity<BookResponseDto> getBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                   @PathVariable UUID uuid){
+        UUID authorId = userDetails != null ? userDetails.getUserId() : null;
+        var book = bookOrchestrator.loadBookByUUID(authorId,uuid);
         var countOfPages = bookOrchestrator.getCountOfPages(uuid);
         var dto = bookMapper.toDto(book,countOfPages);
 
@@ -77,6 +79,30 @@ public class BookController {
         try(InputStream coverStream = cover.getInputStream()) {
             bookOrchestrator.updateBookCover(userDetails.getUserId(),uuid,coverStream,cover.getSize(), type);
         }
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{uuid}/publish")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> publishBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                            @PathVariable UUID uuid){
+        bookOrchestrator.publishBook(userDetails.getUserId(), uuid);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{uuid}/draft")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> draftBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                          @PathVariable UUID uuid){
+        bookOrchestrator.draftBook(userDetails.getUserId(), uuid);
+        return ResponseEntity.ok().build();
+    }
+
+    @PatchMapping("/{uuid}/archive")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> archiveBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                          @PathVariable UUID uuid){
+        bookOrchestrator.archiveBook(userDetails.getUserId(), uuid);
         return ResponseEntity.ok().build();
     }
 
