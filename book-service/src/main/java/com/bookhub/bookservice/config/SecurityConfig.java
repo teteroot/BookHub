@@ -5,6 +5,7 @@ import com.bookhub.bookservice.security.HeaderFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -34,7 +35,11 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/api/v1/books/**").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/books/*").fullyAuthenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/books/*", "/api/v1/books/").fullyAuthenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/*/pages/*").fullyAuthenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books/*/pages/*").permitAll()
                         .anyRequest().fullyAuthenticated()
 
                 ).addFilterBefore(headerFilter, UsernamePasswordAuthenticationFilter.class)
