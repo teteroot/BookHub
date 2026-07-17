@@ -8,18 +8,18 @@ import java.io.InputStream;
 import java.util.UUID;
 
 public interface BookOrchestrator {
-    InputStream loadBookStream(UUID authorId, UUID bookId);
-    Book loadBookByUUID(UUID authorId,UUID uuid);
+    InputStream loadBookStream(UUID bookId, UUID authorId);
+    Book loadBookByUUID(UUID bookId,UUID authorId);
     void createBook(Book book, UUID authorId);
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
-    void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content);
+    void updatePageContent(UUID bookId, UUID authorId, Integer pageNumber, InputStream content);
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
-    Integer getCountOfPages(UUID uuid);
-    InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber);
-    void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type);
-    InputStream loadBookCoverStream(UUID authorId, UUID bookId);
+    Integer getCountOfPages(UUID bookId);
+    InputStream loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
+    void updateBookCover(UUID bookId, UUID authorId, InputStream coverStream, Long coverSize, MediaType type);
+    InputStream loadBookCoverStream(UUID bookId, UUID authorId);
     MediaType loadBookCoverContentType();
-    void publishBook(UUID authorId, UUID bookId);
-    void draftBook(UUID authorId, UUID bookId);
-    void archiveBook(UUID authorId, UUID bookId);
+    void publishBook(UUID bookId, UUID authorId);
+    void draftBook(UUID bookId, UUID authorId);
+    void archiveBook(UUID bookId, UUID authorId);
 }

@@ -30,7 +30,7 @@ public class PageController {
                                                         @PathVariable UUID bookId,
                                                         @PathVariable Integer pageNumber){
         UUID readerId = userDetails != null ? userDetails.getUserId() : null;
-        var pageStream = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(readerId,bookId, pageNumber);
+        var pageStream = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(bookId, readerId, pageNumber);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(new InputStreamResource(pageStream));
@@ -45,7 +45,7 @@ public class PageController {
                                                        @RequestParam MultipartFile pdf) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookOrchestrator.updatePageContent( userDetails.getUserId() ,bookId, pageNumber, content);
+            bookOrchestrator.updatePageContent(bookId,userDetails.getUserId() , pageNumber, content);
         }
         return ResponseEntity.ok().build();
 

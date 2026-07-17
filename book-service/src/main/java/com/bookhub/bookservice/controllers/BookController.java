@@ -38,7 +38,7 @@ public class BookController {
     public ResponseEntity<BookResponseDto> getBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                    @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var book = bookOrchestrator.loadBookByUUID(authorId,uuid);
+        var book = bookOrchestrator.loadBookByUUID(uuid,authorId);
         var countOfPages = bookOrchestrator.getCountOfPages(uuid);
         var dto = bookMapper.toDto(book,countOfPages);
 
@@ -49,7 +49,7 @@ public class BookController {
     public ResponseEntity<Resource> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                  @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var bookStream = bookOrchestrator.loadBookStream(authorId,uuid);
+        var bookStream = bookOrchestrator.loadBookStream(uuid,authorId);
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf")
@@ -60,7 +60,7 @@ public class BookController {
     public ResponseEntity<Resource> getBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                  @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var bookCoverStream = bookOrchestrator.loadBookCoverStream(authorId,uuid);
+        var bookCoverStream = bookOrchestrator.loadBookCoverStream(uuid, authorId);
         var contentType = bookOrchestrator.loadBookCoverContentType();
         return ResponseEntity.ok()
                 .contentType(contentType)
@@ -77,7 +77,7 @@ public class BookController {
             coverValidator.validateCoverMedia(type,coverStream);
         }
         try(InputStream coverStream = cover.getInputStream()) {
-            bookOrchestrator.updateBookCover(userDetails.getUserId(),uuid,coverStream,cover.getSize(), type);
+            bookOrchestrator.updateBookCover(uuid,userDetails.getUserId(),coverStream,cover.getSize(), type);
         }
         return ResponseEntity.ok().build();
     }
@@ -86,7 +86,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> publishBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                             @PathVariable UUID uuid){
-        bookOrchestrator.publishBook(userDetails.getUserId(), uuid);
+        bookOrchestrator.publishBook(uuid, userDetails.getUserId());
         return ResponseEntity.ok().build();
     }
 
@@ -94,7 +94,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> draftBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
-        bookOrchestrator.draftBook(userDetails.getUserId(), uuid);
+        bookOrchestrator.draftBook(uuid, userDetails.getUserId());
         return ResponseEntity.ok().build();
     }
 
@@ -102,7 +102,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> archiveBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
-        bookOrchestrator.archiveBook(userDetails.getUserId(), uuid);
+        bookOrchestrator.archiveBook(uuid, userDetails.getUserId());
         return ResponseEntity.ok().build();
     }
 

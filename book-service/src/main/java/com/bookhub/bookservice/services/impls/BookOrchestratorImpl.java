@@ -31,7 +31,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     private final ImageService imageService;
 
     @Override
-    public InputStream loadBookStream(UUID authorId, UUID bookId) {
+    public InputStream loadBookStream(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
@@ -44,7 +44,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public InputStream loadPageStreamByBookIdAndPageNumber(UUID readerId,UUID bookId, Integer pageNumber) {
+    public InputStream loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber) {
         var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(readerId)){
             throw new BookAccessDeniedException();
@@ -54,8 +54,8 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void updateBookCover(UUID authorId, UUID uuid, InputStream coverStream, Long coverSize, MediaType type) {
-        var book = bookManagementService.claimBookForUpdate(uuid, authorId);
+    public void updateBookCover(UUID bookId, UUID authorId, InputStream coverStream, Long coverSize, MediaType type) {
+        var book = bookManagementService.claimBookForUpdate(bookId, authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)) {
             throw new BookNotDraftingException();
         }
@@ -106,7 +106,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public InputStream loadBookCoverStream(UUID authorId, UUID bookId) {
+    public InputStream loadBookCoverStream(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
@@ -124,7 +124,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void publishBook(UUID authorId, UUID bookId) {
+    public void publishBook(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)) {
             throw new BookNotDraftingException(book.getStatus());
@@ -142,7 +142,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void draftBook(UUID authorId, UUID bookId) {
+    public void draftBook(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (book.getStatus().equals(BookStatus.DRAFT)) {
             throw new BookAlreadyRequireStatusException(BookStatus.DRAFT);
@@ -154,7 +154,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void archiveBook(UUID authorId, UUID bookId) {
+    public void archiveBook(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (book.getStatus().equals(BookStatus.ARCHIVED)) {
             throw new BookAlreadyRequireStatusException(BookStatus.ARCHIVED);
@@ -166,8 +166,8 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public Book loadBookByUUID(UUID authorId,UUID uuid) {
-        var book = bookManagementService.loadBookByUUID(uuid);
+    public Book loadBookByUUID(UUID bookId,UUID authorId) {
+        var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getAuthorId().equals(authorId) && !book.getStatus().equals(BookStatus.PUBLISHED)){
             throw new BookAccessDeniedException();
         }
@@ -215,7 +215,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void updatePageContent(UUID authorId, UUID bookId, Integer pageNumber, InputStream content) {
+    public void updatePageContent(UUID bookId, UUID authorId, Integer pageNumber, InputStream content) {
         var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
@@ -258,8 +258,8 @@ public class BookOrchestratorImpl implements BookOrchestrator {
 
 
     @Override
-    public Integer getCountOfPages(UUID uuid) {
-        return pageService.getCountOfPages(uuid);
+    public Integer getCountOfPages(UUID bookId) {
+        return pageService.getCountOfPages(bookId);
     }
 
     private String cacheBookContent(UUID bookId){
