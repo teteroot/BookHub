@@ -30,10 +30,11 @@ public class PageController {
                                                         @PathVariable UUID bookId,
                                                         @PathVariable Integer pageNumber){
         UUID readerId = userDetails != null ? userDetails.getUserId() : null;
-        var pageStream = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(bookId, readerId, pageNumber);
+        var pageContent = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(bookId, readerId, pageNumber);
         return ResponseEntity.ok()
+                .header("X-Page-Id", pageContent.pageId().toString())
                 .contentType(MediaType.APPLICATION_PDF)
-                .body(new InputStreamResource(pageStream));
+                .body(new InputStreamResource(pageContent.stream()));
 
     }
 

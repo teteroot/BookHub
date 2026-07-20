@@ -44,13 +44,13 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public InputStream loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber) {
+    public PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber) {
         var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(readerId)){
             throw new BookAccessDeniedException();
         }
         var page = pageService.loadPageByBookIdAndPageNumber(bookId, pageNumber);
-        return bookStorageService.loadContent(page.getS3FilePath());
+        return new PageContent(bookStorageService.loadContent(page.getS3FilePath()), page.getId());
     }
 
     @Override

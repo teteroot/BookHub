@@ -22,7 +22,10 @@ public interface BookOrchestrator {
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
 
     Integer getCountOfPages(UUID bookId);
-    InputStream loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
+
+    record PageContent(InputStream stream, UUID pageId) {}
+    PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
+
     void updateBookCover(UUID bookId, UUID authorId, InputStream coverStream, Long coverSize, MediaType type);
 
     InputStream loadBookCoverStream(UUID bookId, UUID authorId);
