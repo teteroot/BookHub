@@ -115,6 +115,14 @@ public class BookController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @DeleteMapping("/{uuid}")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> deleteBook(@PathVariable UUID uuid,
+                                           @AuthenticationPrincipal GatewayUserDetails userDetails) {
+        bookOrchestrator.deleteBook(uuid,userDetails.getUserId());
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping(value = "/{uuid}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> createBookContent(@PathVariable UUID uuid,

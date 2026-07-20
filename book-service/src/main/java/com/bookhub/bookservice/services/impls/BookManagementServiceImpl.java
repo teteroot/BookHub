@@ -99,4 +99,9 @@ public class BookManagementServiceImpl implements BookManagementService {
         book.setS3CoverPath(coverPath);
     }
 
+    @Override
+    public void deleteBookByUUID(UUID bookId) {
+        bookRepository.deleteById(bookId);
+    }
+
 }

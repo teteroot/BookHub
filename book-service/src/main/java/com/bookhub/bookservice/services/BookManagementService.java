@@ -22,4 +22,6 @@ public interface BookManagementService {
     void removeContentPath(UUID bookId);
 
     void updateBookCoverPath(UUID bookId, String coverPath);
+
+    void deleteBookByUUID(UUID bookId);
 }

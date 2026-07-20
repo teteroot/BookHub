@@ -166,6 +166,13 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
+    public void deleteBook(UUID bookId, UUID authorId) {
+        bookManagementService.loadAuthorBookByUUID(bookId,authorId);
+        bookManagementService.deleteBookByUUID(bookId);
+        bookStorageService.removeBook(bookId);
+    }
+
+    @Override
     public Book loadBookByUUID(UUID bookId,UUID authorId) {
         var book = bookManagementService.loadBookByUUID(bookId);
         if (!book.getAuthorId().equals(authorId) && !book.getStatus().equals(BookStatus.PUBLISHED)){
