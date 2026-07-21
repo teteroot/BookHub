@@ -296,6 +296,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             throw e;
         } catch (DataAccessException e){
             bookStorageService.removeBookStorageContent(pageContentPath);
+            throw new ContentSaveException();
         } catch (Exception e) {
             log.error("Failed to update page content for bookId {}", bookId, e);
             throw new ContentSaveException();
