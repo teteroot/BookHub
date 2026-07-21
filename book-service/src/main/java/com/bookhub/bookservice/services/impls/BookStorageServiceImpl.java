@@ -28,11 +28,11 @@ public class BookStorageServiceImpl implements BookStorageService {
     private final S3Client s3Client;
 
     @Override
-    public String createPageContent(UUID bookId, UUID pageId, InputStream content, Long size) {
+    public String createPageContent(UUID bookId, InputStream content, Long size) {
         var path = "%s%s/%s%s".formatted(
                 storageProperties.getDestination().formatted(bookId),
                 storageProperties.getPageDestination(),
-                pageId,
+                UUID.randomUUID(),
                 storageProperties.getFileExtension()
         );
         try {
@@ -115,11 +115,11 @@ public class BookStorageServiceImpl implements BookStorageService {
     }
 
     @Override
-    public void removeBookCover(String coverPath) {
+    public void removeBookStorageContent(String content) {
         try {
-            s3Template.deleteObject(storageProperties.getBucketName(), coverPath);
+            s3Template.deleteObject(storageProperties.getBucketName(), content);
         } catch (RuntimeException ignored) {
-            log.error("Failed to delete book cover in S3 for path: {}", coverPath);
+            log.error("Failed to delete book storage content in S3 for path: {}", content);
         }
     }
 
