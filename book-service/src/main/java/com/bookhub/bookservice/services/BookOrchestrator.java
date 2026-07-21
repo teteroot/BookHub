@@ -17,11 +17,13 @@ public interface BookOrchestrator {
 
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
 
-    void updatePageContent(UUID bookId, UUID authorId, Integer pageNumber, InputStream content);
+    void updatePageContent(UUID bookId, UUID authorId, UUID pageId, InputStream content);
 
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
 
     Integer getCountOfPages(UUID bookId);
+
+    void createBookPage(UUID bookId, UUID authorId, Integer pageNumber, InputStream content);
 
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);

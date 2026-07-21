@@ -15,4 +15,8 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
     List<Page> findAllByBook_IdOrderByPageNumber(UUID bookId);
 
     Optional<Page> findByBook_IdAndPageNumber(UUID bookId, Integer pageNumber);
+
+    Optional<Page> findPageByIdAndBook_Id(UUID id, UUID bookId);
+
+    List<Page> findAllByBook_IdAndPageNumberGreaterThanEqualOrderByPageNumberDesc(UUID bookId, Integer pageNumberIsGreaterThan);
 }

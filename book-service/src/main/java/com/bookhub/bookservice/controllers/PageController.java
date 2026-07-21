@@ -38,15 +38,29 @@ public class PageController {
 
     }
 
-    @PatchMapping("/{pageNumber}")
+    @PatchMapping("/{pageId}")
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> updatePageByPageNumber(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                        @PathVariable UUID bookId,
-                                                       @PathVariable Integer pageNumber,
+                                                       @PathVariable UUID pageId,
                                                        @RequestParam MultipartFile pdf) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookOrchestrator.updatePageContent(bookId,userDetails.getUserId() , pageNumber, content);
+            bookOrchestrator.updatePageContent(bookId, userDetails.getUserId() , pageId, content);
+        }
+        return ResponseEntity.ok().build();
+
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> putNewPage(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                              @PathVariable UUID bookId,
+                                              @RequestParam(required = false) Integer pageNumber,
+                                              @RequestParam MultipartFile pdf) throws IOException {
+        pdfValidator.validateBookPDF(pdf);
+        try(InputStream content = pdf.getInputStream()) {
+            bookOrchestrator.createBookPage(bookId, userDetails.getUserId() , pageNumber, content);
         }
         return ResponseEntity.ok().build();
 

@@ -9,10 +9,18 @@ import java.util.UUID;
 public interface PageService {
 
     Integer getCountOfPages(UUID bookId);
+
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
+
     void updatePageFilePath(UUID pageId, String path);
+
     UUID addNewPageToBook(Book book, int index);
+
     List<Page> loadBookPagesSortedByPageNumber(UUID bookId);
 
-    Page claimPageForUpload(UUID bookId, Integer pageNumber);
+    Page claimPageForUpload(UUID pageId,UUID bookId);
+
+    Page claimPageForUploadByNumber(UUID bookId, Integer pageNumber);
+
+    void putNewPageToBook(Book book, String pagePath, int pageNumber);
 }

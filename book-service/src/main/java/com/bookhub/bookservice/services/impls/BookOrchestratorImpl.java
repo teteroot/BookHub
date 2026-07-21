@@ -89,7 +89,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             }
         }
         if (oldCoverPath != null &&  !oldCoverPath.equals(coverPath)){
-            bookStorageService.removeBookCover(oldCoverPath);
+            bookStorageService.removeBookStorageContent(oldCoverPath);
         }
     }
 
@@ -98,7 +98,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         try {
             bookManagementService.updateBookCoverPath(bookId, coverPath);
         } catch (DataAccessException e) {
-            bookStorageService.removeBookCover(coverPath);
+            bookStorageService.removeBookStorageContent(coverPath);
             log.error("Failed to update book path at {}", bookId, e);
             throw new CoverSaveException();
         }
@@ -203,7 +203,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             for (int i = 0;i<pages.size();i++) {
                 try(InputStream stream = fileTempService.openStream(pages.get(i))) {
                     var pageId = pageService.addNewPageToBook(book, i);
-                    var path = bookStorageService.createPageContent(bookId, pageId, stream, fileTempService.sizeOf(pages.get(i)));
+                    var path = bookStorageService.createPageContent(bookId, stream, fileTempService.sizeOf(pages.get(i)));
                     pageService.updatePageFilePath(pageId, path);
                 }
             }
@@ -222,12 +222,12 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void updatePageContent(UUID bookId, UUID authorId, Integer pageNumber, InputStream content) {
+    public void updatePageContent(UUID bookId, UUID authorId, UUID pageId, InputStream content) {
         var book = bookManagementService.loadAuthorBookByUUID(bookId, authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
         }
-        var page = pageService.claimPageForUpload(bookId, pageNumber);
+        var page = pageService.claimPageForUpload(pageId,bookId);
         var pageFiles = pdfService.loadPages(content);
         try {
             if (pageFiles.size() != 1){
@@ -242,7 +242,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         } catch (TooManyPagesException e) {
             throw e;
         } catch (Exception e) {
-            log.error("Failed to update page {} content for bookId {}", pageNumber, bookId, e);
+            log.error("Failed to update page {} content for bookId {}", pageId, bookId, e);
             throw new ContentSaveException();
         } finally {
             fileTempService.deleteQuietly(pageFiles);
@@ -267,6 +267,41 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public Integer getCountOfPages(UUID bookId) {
         return pageService.getCountOfPages(bookId);
+    }
+
+    @Override
+    public void createBookPage(UUID bookId, UUID authorId, Integer pageNumber, InputStream content) {
+        var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)){
+            throw new BookNotDraftingException();
+        }
+        if (pageNumber == null){
+            pageNumber = pageService.getCountOfPages(bookId) + 1;
+        }
+        List<Path> pageFiles = new ArrayList<>();
+        String pageContentPath = "";
+        try {
+            pageFiles.addAll(pdfService.loadPages(content));
+            if (pageFiles.size() != 1){
+                throw new TooManyPagesException(1);
+            }
+            bookManagementService.removeContentPath(bookId);
+            var pagePath = pageFiles.getFirst();
+            try(InputStream pageStream = fileTempService.openStream(pagePath)) {
+                long pageSize = fileTempService.sizeOf(pagePath);
+                pageContentPath = bookStorageService.createPageContent(bookId,  pageStream, pageSize);
+                pageService.putNewPageToBook(book, pageContentPath, pageNumber);
+            }
+        } catch (TooManyPagesException e) {
+            throw e;
+        } catch (DataAccessException e){
+            bookStorageService.removeBookStorageContent(pageContentPath);
+        } catch (Exception e) {
+            log.error("Failed to update page content for bookId {}", bookId, e);
+            throw new ContentSaveException();
+        } finally {
+            fileTempService.deleteQuietly(pageFiles);
+        }
     }
 
     private String cacheBookContent(UUID bookId){
@@ -302,7 +337,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     private String cacheBookCoverFromFirstPage(UUID bookId, MediaType type) {
         Page page;
         try {
-            page = pageService.claimPageForUpload(bookId, 1);
+            page = pageService.claimPageForUploadByNumber(bookId, 1);
         } catch (PageNotFoundException e) {
             throw new BookContentNotFoundException();
         }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,8 +60,21 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    public Page claimPageForUpload(UUID pageId, UUID bookId) {
+        var page = pageRepository.findPageByIdAndBook_Id(pageId, bookId)
+                .orElseThrow(PageNotFoundException::new);
+        page.setUpdatedAt(Instant.now());
+        try {
+            pageRepository.saveAndFlush(page);
+        } catch (ObjectOptimisticLockingFailureException e){
+            throw new PageConcurrentModificationException();
+        }
+        return page;
+    }
+
+    @Override
     @Transactional
-    public Page claimPageForUpload(UUID bookId, Integer pageNumber) {
+    public Page claimPageForUploadByNumber(UUID bookId, Integer pageNumber) {
         var page = pageRepository.findByBook_IdAndPageNumber(bookId, pageNumber)
                 .orElseThrow(PageNotFoundException::new);
         page.setUpdatedAt(Instant.now());
@@ -70,6 +84,26 @@ public class PageServiceImpl implements PageService {
             throw new PageConcurrentModificationException();
         }
         return page;
+    }
+
+    @Override
+    @Transactional
+    public void putNewPageToBook(Book book, String pagePath, int pageNumber) {
+        var page = Page.builder()
+                .book(book)
+                .pageNumber(pageNumber)
+                .originalPageIndex(pageNumber-1)
+                .s3FilePath(pagePath)
+                .build();
+        List<Page> pages = new ArrayList<>(
+                pageRepository.findAllByBook_IdAndPageNumberGreaterThanEqualOrderByPageNumberDesc(book.getId(), pageNumber)
+        );
+        pages.forEach((currPage) -> {
+            currPage.setPageNumber(currPage.getPageNumber() + 1);
+            currPage.setOriginalPageIndex(currPage.getOriginalPageIndex() + 1);
+        });
+        pageRepository.saveAllAndFlush(pages);
+        pageRepository.save(page);
     }
 
 
