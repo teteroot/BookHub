@@ -32,9 +32,8 @@ CREATE TABLE book_pages (
                 ON DELETE CASCADE,
         CONSTRAINT uq_book_pages_book_page
             UNIQUE (book_id, page_number)
+                DEFERRABLE INITIALLY DEFERRED
 );
 
 CREATE INDEX idx_book_pages_book_source
     ON book_pages (book_id);
-CREATE UNIQUE INDEX uq_book_id_page_number
-    ON book_pages (book_id, page_number);
