@@ -294,11 +294,11 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             }
         } catch (TooManyPagesException e) {
             throw e;
-        } catch (DataAccessException e){
-            bookStorageService.removeBookStorageContent(pageContentPath);
-            throw new ContentSaveException();
         } catch (Exception e) {
             log.error("Failed to update page content for bookId {}", bookId, e);
+            if (!pageContentPath.isBlank()){
+                bookStorageService.removeBookStorageContent(pageContentPath);
+            }
             throw new ContentSaveException();
         } finally {
             fileTempService.deleteQuietly(pageFiles);
