@@ -2,6 +2,9 @@ package com.bookhub.bookservice.repositories;
 
 import com.bookhub.bookservice.models.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -18,5 +21,13 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
 
     Optional<Page> findPageByIdAndBook_Id(UUID id, UUID bookId);
 
-    List<Page> findAllByBook_IdAndPageNumberGreaterThanEqualOrderByPageNumberDesc(UUID bookId, Integer pageNumberIsGreaterThan);
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Page p
+            SET p.pageNumber = p.pageNumber + 1,
+                p.originalPageIndex = p.originalPageIndex + 1
+            WHERE p.book.id = :bookId AND p.pageNumber >= :pageNumber
+           """)
+    void shiftPagesRight(@Param("bookId") UUID bookId, @Param("pageNumber") int pageNumber);
+
 }

@@ -12,7 +12,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -89,20 +88,13 @@ public class PageServiceImpl implements PageService {
     @Override
     @Transactional
     public void putNewPageToBook(Book book, String pagePath, int pageNumber) {
+        pageRepository.shiftPagesRight(book.getId(),pageNumber);
         var page = Page.builder()
                 .book(book)
                 .pageNumber(pageNumber)
                 .originalPageIndex(pageNumber-1)
                 .s3FilePath(pagePath)
                 .build();
-        List<Page> pages = new ArrayList<>(
-                pageRepository.findAllByBook_IdAndPageNumberGreaterThanEqualOrderByPageNumberDesc(book.getId(), pageNumber)
-        );
-        pages.forEach((currPage) -> {
-            currPage.setPageNumber(currPage.getPageNumber() + 1);
-            currPage.setOriginalPageIndex(currPage.getOriginalPageIndex() + 1);
-        });
-        pageRepository.saveAllAndFlush(pages);
         pageRepository.save(page);
     }
 
