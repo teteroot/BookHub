@@ -4,24 +4,23 @@ import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
-import com.bookhub.bookservice.services.BookManagementService;
-import com.bookhub.bookservice.services.BookStorageService;
-import com.bookhub.bookservice.services.FileTempService;
-import com.bookhub.bookservice.services.PDFService;
-import com.bookhub.bookservice.services.PageService;
+import com.bookhub.bookservice.services.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.MediaType;
 
 import java.io.InputStream;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,179 +36,118 @@ class BookOrchestratorImplTest {
     private PageService pageService;
     @Mock
     private FileTempService fileTempService;
+    @Mock
+    private ImageService imageService;
 
     @InjectMocks
-    private BookOrchestratorImpl bookService;
+    private BookOrchestratorImpl orchestrator;
 
     @Test
-    void testLoadForbiddenBookStream() {
-        var book = Book.builder()
-                .id(UUID.randomUUID())
-                .authorId(UUID.randomUUID())
-                .status(BookStatus.DRAFT)
-                .build();
+    void loadBookStream_deniesUnpublishedBookToNonAuthor() {
+        var book = book(BookStatus.DRAFT);
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+
         assertThrows(BookAccessDeniedException.class,
-                () -> bookService.loadBookStream(UUID.randomUUID(), book.getId()));
+                () -> orchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
+        verifyNoInteractions(bookStorageService, pageService, pdfService);
     }
 
     @Test
-    void testSuccessfulLoadBookStream_cacheMiss_generatesAndCachesArchive() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
+    void loadBookStream_returnsCachedArchive() {
+        var book = book(BookStatus.DRAFT);
+        book.setS3ArchivePath("archive");
+        var expected = InputStream.nullInputStream();
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(bookStorageService.loadContent("archive")).thenReturn(expected);
 
-        var book = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.DRAFT)
-                .s3ArchivePath(null)
-                .build();
-
-        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(book);
-
-        var page = Page.builder().id(UUID.randomUUID()).s3FilePath("page-path").build();
-        when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(List.of(page));
-        var pageTempPath = Path.of("page-temp.pdf");
-        var bookTempPath = Path.of("book-temp.pdf");
-        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(pageTempPath);
-        when(fileTempService.openStream(bookTempPath)).thenReturn(InputStream.nullInputStream());
-        when(fileTempService.sizeOf(bookTempPath)).thenReturn(20L);
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(bookTempPath);
-        when(bookStorageService.createBookContent(eq(bookId), any(), eq(20L)))
-                .thenReturn("archive-path");
-        when(bookStorageService.loadContent("archive-path")).thenReturn(InputStream.nullInputStream());
-
-        assertDoesNotThrow(() -> bookService.loadBookStream(authorId, bookId));
-
-        verify(bookManagementService).updateBookContentPath(bookId, "archive-path");
-        verify(bookManagementService).loadBookByUUID(bookId);
-        verify(bookStorageService).loadContent("archive-path");
+        assertSame(expected, orchestrator.loadBookStream(book.getId(), book.getAuthorId()));
+        verify(bookStorageService).loadContent("archive");
+        verifyNoInteractions(pdfService, fileTempService);
     }
 
     @Test
-    void testLoadBookStream_cacheHit_skipsRegeneration() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.DRAFT)
-                .s3ArchivePath("archive-path")
-                .build();
+    void loadBookStream_cacheMiss_createsAndStoresArchive() {
+        var book = book(BookStatus.DRAFT);
+        var page = Page.builder().id(UUID.randomUUID()).s3FilePath("page").build();
+        var pageFile = Path.of("page.pdf");
+        var bookFile = Path.of("book.pdf");
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(pageService.loadBookPagesSortedByPageNumber(book.getId())).thenReturn(List.of(page));
+        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(pageFile);
+        when(pdfService.collectBookFromPages(List.of(pageFile))).thenReturn(bookFile);
+        when(fileTempService.openStream(bookFile)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(bookFile)).thenReturn(12L);
+        when(bookStorageService.createBookContent(eq(book.getId()), any(), eq(12L))).thenReturn("archive");
+        when(bookStorageService.loadContent("archive")).thenReturn(InputStream.nullInputStream());
 
-        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(book);
-        when(bookStorageService.loadContent("archive-path")).thenReturn(InputStream.nullInputStream());
+        orchestrator.loadBookStream(book.getId(), book.getAuthorId());
 
-        assertDoesNotThrow(() -> bookService.loadBookStream(authorId, bookId));
-
-        verifyNoInteractions(fileTempService);
-        verify(pageService, never()).loadBookPagesSortedByPageNumber(any());
-        verify(pdfService, never()).collectBookFromPages(any());
-        verify(bookManagementService, never()).updateBookContentPath(any(), any());
+        verify(bookManagementService).updateBookContentPath(book.getId(), "archive");
+        verify(fileTempService).deleteQuietly(argThat(paths -> paths.contains(pageFile) && paths.contains(bookFile)));
     }
 
     @Test
-    void testLoadBookStream_cacheMiss_emptyBook_throwsBookContentNotFoundException() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.DRAFT)
-                .s3ArchivePath(null)
-                .build();
-
-        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(book);
-        when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(Collections.emptyList());
+    void loadBookStream_cacheMiss_withoutPagesThrowsNotFound() {
+        var book = book(BookStatus.PUBLISHED);
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(pageService.loadBookPagesSortedByPageNumber(book.getId())).thenReturn(List.of());
 
         assertThrows(BookContentNotFoundException.class,
-                () -> bookService.loadBookStream(authorId, bookId));
-
-        verifyNoInteractions(fileTempService);
-        verify(bookStorageService, never()).createBookContent(any(), any(), anyLong());
-        verify(bookManagementService, never()).updateBookContentPath(any(), any());
+                () -> orchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
     }
 
     @Test
-    void testLoadBookStream_publishedBookAccessibleByAnyone() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var path = Path.of("book-temp.pdf");
-        var bookWithoutArchive = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.PUBLISHED)
-                .s3ArchivePath(null)
-                .build();
-        when(bookManagementService.loadBookByUUID(bookId))
-                .thenReturn(bookWithoutArchive);
-        when(pageService.loadBookPagesSortedByPageNumber(bookId))
-                .thenReturn(List.of(Page.builder()
-                        .id(UUID.randomUUID())
-                        .s3FilePath("path")
-                        .build()));
-        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(Path.of("page-temp.pdf"));
-        when(fileTempService.openStream(path)).thenReturn(InputStream.nullInputStream());
-        when(fileTempService.sizeOf(path)).thenReturn(20L);
-        when(pdfService.collectBookFromPages(anyList())).thenReturn(path);
-        when(bookStorageService.createBookContent(eq(bookId), any(), eq(20L))).thenReturn("archive-path");
-        when(bookStorageService.loadContent("archive-path")).thenReturn(InputStream.nullInputStream());
-        assertDoesNotThrow(() -> bookService.loadBookStream(UUID.randomUUID(), bookId));
+    void loadPageStream_checksAccessAndReturnsPageContent() {
+        var book = book(BookStatus.PUBLISHED);
+        var pageId = UUID.randomUUID();
+        var page = Page.builder().id(pageId).s3FilePath("page").build();
+        var expected = InputStream.nullInputStream();
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(pageService.loadPageByBookIdAndPageNumber(book.getId(), 2)).thenReturn(page);
+        when(bookStorageService.loadContent("page")).thenReturn(expected);
+
+        var result = orchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 2);
+
+        assertSame(expected, result.stream());
+        assertEquals(pageId, result.pageId());
     }
 
     @Test
-    void testLoadBookStream_bookNotFound() {
-        var bookId = UUID.randomUUID();
-        when(bookManagementService.loadBookByUUID(bookId)).thenThrow(new BookNotFoundException());
-
-        assertThrows(BookNotFoundException.class,
-                () -> bookService.loadBookStream(UUID.randomUUID(), bookId));
-        verifyNoInteractions(bookStorageService, pdfService);
-    }
-
-    @Test
-    void testLoadBookStream_noPages_BookContentNotFoundException() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var bookWithoutArchive = Book.builder()
-                .id(bookId)
-                .authorId(authorId)
-                .status(BookStatus.PUBLISHED)
-                .s3ArchivePath(null)
-                .build();
-
-        when(bookManagementService.loadBookByUUID(bookId)).thenReturn(bookWithoutArchive);
-        when(pageService.loadBookPagesSortedByPageNumber(bookId)).thenReturn(Collections.emptyList());
-
-        assertThrows(BookContentNotFoundException.class,() -> bookService.loadBookStream(authorId, bookId));
-        verifyNoInteractions(bookStorageService, fileTempService);
-    }
-
-    @Test
-    void testLoadBookByUUID_delegatesToManagementService() {
-        var book = Book.builder().id(UUID.randomUUID()).build();
+    void loadPageStream_deniesUnpublishedBookToNonAuthor() {
+        var book = book(BookStatus.ARCHIVED);
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
 
-        var result = bookService.loadBookByUUID(book.getId());
-
-        assertEquals(book, result);
-        verify(bookManagementService).loadBookByUUID(book.getId());
+        assertThrows(BookAccessDeniedException.class,
+                () -> orchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 1));
+        verifyNoInteractions(pageService, bookStorageService);
     }
 
     @Test
-    void testLoadBookByUUID_notFound() {
-        var bookId = UUID.randomUUID();
-        when(bookManagementService.loadBookByUUID(bookId)).thenThrow(new BookNotFoundException());
+    void loadBookByUUID_allowsAuthorAndPublishedReader() {
+        var draft = book(BookStatus.DRAFT);
+        when(bookManagementService.loadBookByUUID(draft.getId())).thenReturn(draft);
+        assertSame(draft, orchestrator.loadBookByUUID(draft.getId(), draft.getAuthorId()));
 
-        assertThrows(BookNotFoundException.class, () -> bookService.loadBookByUUID(bookId));
+        var published = book(BookStatus.PUBLISHED);
+        when(bookManagementService.loadBookByUUID(published.getId())).thenReturn(published);
+        assertSame(published, orchestrator.loadBookByUUID(published.getId(), UUID.randomUUID()));
     }
 
     @Test
-    void testCreateBook_setsAuthorAndEmptyStatus() {
+    void loadBookByUUID_deniesUnpublishedBookToNonAuthor() {
+        var book = book(BookStatus.ARCHIVED);
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+
+        assertThrows(BookAccessDeniedException.class,
+                () -> orchestrator.loadBookByUUID(book.getId(), UUID.randomUUID()));
+    }
+
+    @Test
+    void createBook_setsAuthorAndEmptyStatus() {
         var book = Book.builder().build();
         var authorId = UUID.randomUUID();
 
-        bookService.createBook(book, authorId);
+        orchestrator.createBook(book, authorId);
 
         assertEquals(authorId, book.getAuthorId());
         assertEquals(BookStatus.EMPTY, book.getStatus());
@@ -217,195 +155,286 @@ class BookOrchestratorImplTest {
     }
 
     @Test
-    void testCreateBook_alreadyExists_propagatesException() {
-        var book = Book.builder().title("Duplicate").build();
-        doThrow(new BookAlreadyExistException(book.getTitle()))
-                .when(bookManagementService).createBook(book);
-
-        assertThrows(BookAlreadyExistException.class,
-                () -> bookService.createBook(book, UUID.randomUUID()));
-    }
-
-    @Test
-    void testCreateBookContent_success_noExistingPages() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
-        var pageStream = InputStream.nullInputStream();
-        var path = Path.of("page-1.pdf");
-
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPages(any())).thenReturn(List.of(path));
-        when(fileTempService.openStream(path)).thenReturn(pageStream);
-        when(fileTempService.sizeOf(path)).thenReturn(123L);
+    void createBookContent_uploadsPagesAndChangesStatus() {
+        var book = book(BookStatus.EMPTY);
+        var files = List.of(Path.of("one.pdf"), Path.of("two.pdf"));
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(0);
+        when(pdfService.loadPages(any())).thenReturn(files);
+        when(fileTempService.openStream(any())).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(files.get(0))).thenReturn(10L);
+        when(fileTempService.sizeOf(files.get(1))).thenReturn(20L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
-        when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L))).thenReturn("path");
+        when(bookStorageService.createPageContent(eq(book.getId()), any(), anyLong())).thenReturn("page-path");
 
-        assertDoesNotThrow(() -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
+        orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
 
-        verify(bookManagementService, never()).removeAllPages(any());
-        verify(pageService).updatePageFilePath(any(), eq("path"));
-        verify(bookManagementService).updateBookStatus(bookId, BookStatus.DRAFT);
+        var numbers = ArgumentCaptor.forClass(Integer.class);
+        verify(pageService, times(2)).addNewPageToBook(eq(book), numbers.capture());
+        assertEquals(List.of(1, 2), numbers.getAllValues());
+        verify(bookManagementService).updateBookStatus(book.getId(), BookStatus.DRAFT);
+        verify(fileTempService).deleteQuietly(files);
     }
 
     @Test
-    void testCreateBookContent_removesExistingPagesBeforeUpload() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
+    void createBookContent_replacesExistingPages() {
+        var book = book(BookStatus.EMPTY);
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(1);
+        when(pdfService.loadPages(any())).thenReturn(List.of());
 
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(5);
-        when(pdfService.loadPages(any())).thenReturn(Collections.emptyList());
+        orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
 
-        bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
-
-        verify(bookManagementService).removeAllPages(bookId);
-        verify(bookStorageService).removeBook(bookId);
-        verify(bookManagementService).updateBookStatus(bookId, BookStatus.DRAFT);
+        verify(bookManagementService).removeAllPages(book.getId());
+        verify(bookStorageService).removeBook(book.getId());
+        verify(bookManagementService).updateBookStatus(book.getId(), BookStatus.DRAFT);
     }
 
     @Test
-    void testCreateBookContent_multiplePages_incrementsPageNumberSequentially() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
+    void createBookContent_rejectsContentForNonEmptyBook() {
+        var book = book(BookStatus.DRAFT);
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
 
-        var stream1 = InputStream.nullInputStream();
-        var stream2 = InputStream.nullInputStream();
-        var path1 = Path.of("page-1.pdf");
-        var path2 = Path.of("page-2.pdf");
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(5);
-        when(pdfService.loadPages(any())).thenReturn(List.of(path1, path2));
-        when(fileTempService.openStream(path1)).thenReturn(stream1);
-        when(fileTempService.openStream(path2)).thenReturn(stream2);
-        when(fileTempService.sizeOf(path1)).thenReturn(100L);
-        when(fileTempService.sizeOf(path2)).thenReturn(200L);
+        assertThrows(BookContentAlreadyExistException.class,
+                () -> orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
+        verifyNoInteractions(pdfService, bookStorageService);
+    }
+
+    @Test
+    void createBookContent_failureCompensatesAndWrapsException() {
+        var book = book(BookStatus.EMPTY);
+        var file = Path.of("page.pdf");
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(0);
+        when(pdfService.loadPages(any())).thenReturn(List.of(file));
+        when(fileTempService.openStream(file)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(file)).thenReturn(10L);
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
-        when(bookStorageService.createPageContent(eq(bookId), any(), any(), anyLong())).thenReturn("path");
-
-        bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
-
-        var pageNumberCaptor = ArgumentCaptor.forClass(Integer.class);
-        verify(pageService, times(2)).addNewPageToBook(eq(book), pageNumberCaptor.capture());
-        assertEquals(List.of(0, 1), pageNumberCaptor.getAllValues());
-    }
-
-    @Test
-    void testCreateBookContent_storageFailure_triggersCompensationAndThrows() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
-        var pageStream = InputStream.nullInputStream();
-        var path =  Path.of("page-1.pdf");
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPages(any())).thenReturn(List.of(path));
-        when(fileTempService.openStream(path)).thenReturn(pageStream);
-        when(fileTempService.sizeOf(path)).thenReturn(123L);
-        when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
-        when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L)))
-                .thenThrow(new ContentSaveException());
+        when(bookStorageService.createPageContent(eq(book.getId()), any(), eq(10L)))
+                .thenThrow(new RuntimeException("storage failure"));
 
         assertThrows(ContentSaveException.class,
-                () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
-
-        verify(bookManagementService).removeAllPages(bookId);
-        verify(bookStorageService).removeBook(bookId);
+                () -> orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
+        verify(bookManagementService).removeAllPages(book.getId());
+        verify(bookStorageService).removeBook(book.getId());
         verify(bookManagementService, never()).updateBookStatus(any(), any());
     }
 
     @Test
-    void testCreateBookContent_compensationItselfFails_stillThrowsContentSaveException() {
+    void updatePageContent_updatesOnePageAndRemovesCachedArchive() {
+        var book = book(BookStatus.DRAFT);
+        var page = Page.builder().s3FilePath("old-page").build();
+        var file = Path.of("page.pdf");
+        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.claimPageForUpload(page.getId(), book.getId())).thenReturn(page);
+        when(pdfService.loadPages(any())).thenReturn(List.of(file));
+        when(fileTempService.openStream(file)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(file)).thenReturn(7L);
+
+        orchestrator.updatePageContent(book.getId(), book.getAuthorId(), page.getId(), InputStream.nullInputStream());
+
+        verify(bookManagementService).removeContentPath(book.getId());
+        verify(bookStorageService).updatePageContent(eq("old-page"), any(), eq(7L));
+        verify(fileTempService).deleteQuietly(List.of(file));
+    }
+
+    @Test
+    void updatePageContent_rejectsMultiplePages() {
+        var book = book(BookStatus.DRAFT);
+        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.claimPageForUpload(any(), eq(book.getId()))).thenReturn(Page.builder().build());
+        when(pdfService.loadPages(any())).thenReturn(List.of(Path.of("1.pdf"), Path.of("2.pdf")));
+
+        assertThrows(TooManyPagesException.class,
+                () -> orchestrator.updatePageContent(book.getId(), book.getAuthorId(), UUID.randomUUID(), InputStream.nullInputStream()));
+        verify(bookManagementService, never()).removeContentPath(any());
+    }
+
+    @Test
+    void createBookPage_usesNextNumberWhenNumberOmitted() {
+        var book = book(BookStatus.DRAFT);
+        var file = Path.of("page.pdf");
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(3);
+        when(pdfService.loadPages(any())).thenReturn(List.of(file));
+        when(fileTempService.openStream(file)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(file)).thenReturn(9L);
+        when(bookStorageService.createPageContent(eq(book.getId()), any(), eq(9L))).thenReturn("new-page");
+
+        orchestrator.createBookPage(book.getId(), book.getAuthorId(), null, InputStream.nullInputStream());
+
+        verify(bookManagementService).removeContentPath(book.getId());
+        verify(pageService).putNewPageToBook(book, "new-page", 4);
+    }
+
+    @Test
+    void createBookPage_rejectsMultiplePagesAndDoesNotStoreContent() {
+        var book = book(BookStatus.DRAFT);
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pdfService.loadPages(any())).thenReturn(List.of(Path.of("1.pdf"), Path.of("2.pdf")));
+
+        assertThrows(TooManyPagesException.class,
+                () -> orchestrator.createBookPage(book.getId(), book.getAuthorId(), 1, InputStream.nullInputStream()));
+        verify(bookStorageService, never()).createPageContent(any(), any(), anyLong());
+    }
+
+    @Test
+    void updateBookCover_storesCommonFormatAndRemovesOldCover() {
+        var book = book(BookStatus.DRAFT);
+        book.setS3CoverPath("old-cover");
+        var type = MediaType.IMAGE_JPEG;
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(imageService.getCommonCoverType()).thenReturn(type);
+        when(bookStorageService.createBookCover(eq(book.getId()), eq(".jpeg"), eq(type.toString()), any(), eq(5L)))
+                .thenReturn("new-cover");
+
+        orchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type);
+
+        verify(bookManagementService).updateBookCoverPath(book.getId(), "new-cover");
+        verify(bookStorageService).removeBookStorageContent("old-cover");
+    }
+
+    @Test
+    void updateBookCover_removesNewStorageWhenDatabaseUpdateFails() {
+        var book = book(BookStatus.DRAFT);
+        var type = MediaType.IMAGE_JPEG;
+        when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(imageService.getCommonCoverType()).thenReturn(type);
+        when(bookStorageService.createBookCover(any(), anyString(), anyString(), any(), anyLong())).thenReturn("new-cover");
+        doThrow(new DataAccessException("database failure") {}).when(bookManagementService)
+                .updateBookCoverPath(book.getId(), "new-cover");
+
+        assertThrows(CoverSaveException.class,
+                () -> orchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type));
+        verify(bookStorageService).removeBookStorageContent("new-cover");
+    }
+
+    @Test
+    void loadBookCoverStream_returnsCachedCover() {
+        var book = book(BookStatus.PUBLISHED);
+        book.setS3CoverPath("cover");
+        var expected = InputStream.nullInputStream();
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(bookStorageService.loadContent("cover")).thenReturn(expected);
+
+        assertSame(expected, orchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID()));
+        verifyNoInteractions(pageService, pdfService, fileTempService);
+    }
+
+    @Test
+    void loadBookCoverStream_withoutCoverCachesImageFromFirstPage() {
+        var book = book(BookStatus.PUBLISHED);
+        var type = MediaType.IMAGE_JPEG;
+        var pageFile = Path.of("page.pdf");
+        var imageFile = Path.of("cover.jpg");
+        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
+        when(imageService.getCommonCoverType()).thenReturn(type);
+        when(pageService.claimPageForUploadByNumber(book.getId(), 1)).thenReturn(Page.builder().s3FilePath("page").build());
+        when(fileTempService.writeToTempFile(eq("page-"), eq(".pdf"), any())).thenReturn(pageFile);
+        when(pdfService.convertSinglePageToImage(pageFile, type, 150)).thenReturn(imageFile);
+        when(fileTempService.openStream(imageFile)).thenReturn(InputStream.nullInputStream());
+        when(fileTempService.sizeOf(imageFile)).thenReturn(20L);
+        when(bookStorageService.createBookCover(eq(book.getId()), eq(".jpeg"), eq(type.toString()), any(), eq(20L)))
+                .thenReturn("cover");
+        when(bookStorageService.loadContent("cover")).thenReturn(InputStream.nullInputStream());
+        when(imageService.getPdfDpi()).thenReturn(150);
+
+        orchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID());
+
+        verify(bookManagementService).updateBookCoverPath(book.getId(), "cover");
+        verify(fileTempService).deleteQuietly(List.of(pageFile, imageFile));
+    }
+
+    @Test
+    void loadBookCoverContentType_delegatesToImageService() {
+        when(imageService.getCommonCoverType()).thenReturn(MediaType.IMAGE_PNG);
+        assertEquals(MediaType.IMAGE_PNG, orchestrator.loadBookCoverContentType());
+    }
+
+    @Test
+    void publishBook_requiresDraftWithPagesAndPublishes() {
+        var book = book(BookStatus.DRAFT);
+        book.setS3ArchivePath("archive");
+        book.setS3CoverPath("cover");
+        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(2);
+
+        orchestrator.publishBook(book.getId(), book.getAuthorId());
+
+        verify(bookManagementService).updateBookStatus(book.getId(), BookStatus.PUBLISHED);
+    }
+
+    @Test
+    void publishBook_rejectsEmptyContent() {
+        var book = book(BookStatus.DRAFT);
+        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
+        when(pageService.getCountOfPages(book.getId())).thenReturn(0);
+
+        assertThrows(BookContentNotFoundException.class,
+                () -> orchestrator.publishBook(book.getId(), book.getAuthorId()));
+        verify(bookManagementService, never()).updateBookStatus(any(), any());
+    }
+
+    @Test
+    void publishBook_rejectsNonDraft() {
+        var book = book(BookStatus.PUBLISHED);
+        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
+
+        assertThrows(BookNotDraftingException.class,
+                () -> orchestrator.publishBook(book.getId(), book.getAuthorId()));
+        verifyNoInteractions(pageService);
+    }
+
+    @Test
+    void draftBook_validatesStatusAndUpdates() {
+        var published = book(BookStatus.PUBLISHED);
+        when(bookManagementService.loadAuthorBookByUUID(published.getId(), published.getAuthorId())).thenReturn(published);
+        orchestrator.draftBook(published.getId(), published.getAuthorId());
+        verify(bookManagementService).updateBookStatus(published.getId(), BookStatus.DRAFT);
+
+        var draft = book(BookStatus.DRAFT);
+        when(bookManagementService.loadAuthorBookByUUID(draft.getId(), draft.getAuthorId())).thenReturn(draft);
+        assertThrows(BookAlreadyRequireStatusException.class,
+                () -> orchestrator.draftBook(draft.getId(), draft.getAuthorId()));
+    }
+
+    @Test
+    void archiveBook_rejectsEmptyAndArchivesPublishedBook() {
+        var published = book(BookStatus.PUBLISHED);
+        when(bookManagementService.loadAuthorBookByUUID(published.getId(), published.getAuthorId())).thenReturn(published);
+        orchestrator.archiveBook(published.getId(), published.getAuthorId());
+        verify(bookManagementService).updateBookStatus(published.getId(), BookStatus.ARCHIVED);
+
+        var empty = book(BookStatus.EMPTY);
+        when(bookManagementService.loadAuthorBookByUUID(empty.getId(), empty.getAuthorId())).thenReturn(empty);
+        assertThrows(BookContentNotFoundException.class,
+                () -> orchestrator.archiveBook(empty.getId(), empty.getAuthorId()));
+    }
+
+    @Test
+    void deleteBook_deletesDatabaseRecordAndStorage() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
-        var pageStream = InputStream.nullInputStream();
-        var path = Path.of("page-1.pdf");
+        when(bookManagementService.loadAuthorBookByUUID(bookId, authorId)).thenReturn(book(BookStatus.DRAFT));
 
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPages(any())).thenReturn(List.of(path));
-        when(fileTempService.openStream(path)).thenReturn(pageStream);
-        when(fileTempService.sizeOf(path)).thenReturn(123L);
-        when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
-        when(bookStorageService.createPageContent(eq(bookId), any(), any(), eq(123L)))
-                .thenThrow(new RuntimeException("S3 unavailable"));
-        doThrow(new RuntimeException("DB also down")).when(bookManagementService).removeAllPages(bookId);
+        orchestrator.deleteBook(bookId, authorId);
 
-        assertThrows(ContentSaveException.class,
-                () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
-
+        verify(bookManagementService).deleteBookByUUID(bookId);
         verify(bookStorageService).removeBook(bookId);
     }
 
     @Test
-    void testCreateBookContent_accessDenied_propagatesFromClaim() {
+    void pageQueries_delegateToPageService() {
         var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        when(bookManagementService.claimBookForUpload(bookId, authorId))
-                .thenThrow(new BookAccessDeniedException());
+        var page = Page.builder().id(UUID.randomUUID()).build();
+        when(pageService.loadPageByBookIdAndPageNumber(bookId, 4)).thenReturn(page);
+        when(pageService.getCountOfPages(bookId)).thenReturn(4);
 
-        assertThrows(BookAccessDeniedException.class,
-                () -> bookService.createBookContent(bookId, authorId, InputStream.nullInputStream()));
-
-        verifyNoInteractions(pdfService, bookStorageService, pageService);
+        assertSame(page, orchestrator.loadPageByBookIdAndPageNumber(bookId, 4));
+        assertEquals(4, orchestrator.getCountOfPages(bookId));
     }
 
-    @Test
-    void testCreateBookContent_emptyPdf_noPagesProcessed() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        var book = Book.builder().id(bookId).authorId(authorId).build();
-
-        when(bookManagementService.claimBookForUpload(bookId, authorId)).thenReturn(book);
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-        when(pdfService.loadPages(any())).thenReturn(Collections.emptyList());
-
-        bookService.createBookContent(bookId, authorId, InputStream.nullInputStream());
-
-        verify(pageService, never()).addNewPageToBook(any(), anyInt());
-        verify(bookManagementService).updateBookStatus(bookId, BookStatus.DRAFT);
-    }
-
-    @Test
-    void testLoadPageByBookIdAndPageNumber_success() {
-        var bookId = UUID.randomUUID();
-        var page = Page.builder().id(UUID.randomUUID()).pageNumber(3).build();
-        when(pageService.loadPageByBookIdAndPageNumber(bookId, 3)).thenReturn(page);
-
-        var result = bookService.loadPageByBookIdAndPageNumber(bookId, 3);
-
-        assertEquals(page, result);
-    }
-
-    @Test
-    void testLoadPageByBookIdAndPageNumber_notFound() {
-        var bookId = UUID.randomUUID();
-        when(pageService.loadPageByBookIdAndPageNumber(bookId, 99))
-                .thenThrow(new PageNotFoundException());
-
-        assertThrows(PageNotFoundException.class,
-                () -> bookService.loadPageByBookIdAndPageNumber(bookId, 99));
-    }
-
-    @Test
-    void testGetCountOfPages_delegatesToPageService() {
-        var bookId = UUID.randomUUID();
-        when(pageService.getCountOfPages(bookId)).thenReturn(42);
-
-        var result = bookService.getCountOfPages(bookId);
-
-        assertEquals(42, result);
-    }
-
-    @Test
-    void testGetCountOfPages_zeroPages() {
-        var bookId = UUID.randomUUID();
-        when(pageService.getCountOfPages(bookId)).thenReturn(0);
-
-        assertEquals(0, bookService.getCountOfPages(bookId));
+    private static Book book(BookStatus status) {
+        return Book.builder().id(UUID.randomUUID()).authorId(UUID.randomUUID()).status(status).build();
     }
 }
