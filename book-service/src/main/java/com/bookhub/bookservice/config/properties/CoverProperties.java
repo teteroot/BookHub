@@ -23,10 +23,6 @@ public class CoverProperties {
         this.commonType = MediaType.parseMediaType(commonType);
     }
 
-    public void setTargetRatio(String targetRatio) {
-        this.targetRatio = Double.valueOf(targetRatio);
-    }
-
     public void setSupportedTypes(Set<String> supportedTypes) {
         this.supportedTypes = new HashSet<>();
         for (String type : supportedTypes) {
