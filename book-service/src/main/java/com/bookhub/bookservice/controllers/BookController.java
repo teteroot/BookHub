@@ -19,6 +19,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,14 +47,19 @@ public class BookController {
     }
 
     @GetMapping("/{uuid}/download")
-    public ResponseEntity<Resource> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                                 @PathVariable UUID uuid){
+    public ResponseEntity<StreamingResponseBody> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                 @PathVariable UUID uuid) {
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
         var bookStream = bookOrchestrator.loadBookStream(uuid,authorId);
+        StreamingResponseBody responseBody = outputStream -> {
+            try (bookStream) {
+                bookStream.transferTo(outputStream);
+            }
+        };
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf")
-                .body(new InputStreamResource(bookStream));
+                .body(responseBody);
     }
 
     @GetMapping("/{uuid}/cover")
