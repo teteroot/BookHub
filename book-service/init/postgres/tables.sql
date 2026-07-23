@@ -21,8 +21,7 @@ CREATE TABLE book_pages (
     id UUID PRIMARY KEY,
     book_id UUID NOT NULL,
     page_number INTEGER NOT NULL,
-    original_page_index INTEGER,
-    s3_patch_path VARCHAR(512),
+    s3_file_path VARCHAR(512),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL,
     version BIGINT NOT NULL DEFAULT 0,
@@ -34,6 +33,3 @@ CREATE TABLE book_pages (
             UNIQUE (book_id, page_number)
                 DEFERRABLE INITIALLY DEFERRED
 );
-
-CREATE INDEX idx_book_pages_book_source
-    ON book_pages (book_id);

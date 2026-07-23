@@ -202,7 +202,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             pages = pdfService.loadPages(content);
             for (int i = 0;i<pages.size();i++) {
                 try(InputStream stream = fileTempService.openStream(pages.get(i))) {
-                    var pageId = pageService.addNewPageToBook(book, i);
+                    var pageId = pageService.addNewPageToBook(book, i + 1);
                     var path = bookStorageService.createPageContent(bookId, stream, fileTempService.sizeOf(pages.get(i)));
                     pageService.updatePageFilePath(pageId, path);
                 }

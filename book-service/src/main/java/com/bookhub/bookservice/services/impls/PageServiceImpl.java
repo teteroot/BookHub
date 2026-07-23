@@ -42,11 +42,10 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
-    public UUID addNewPageToBook(Book book, int index) {
+    public UUID addNewPageToBook(Book book, int pageNumber) {
         var page = Page.builder()
                 .book(book)
-                .pageNumber(index+1)
-                .originalPageIndex(index)
+                .pageNumber(pageNumber)
                 .build();
         book.addPage(page);
         pageRepository.save(page);
@@ -92,7 +91,6 @@ public class PageServiceImpl implements PageService {
         var page = Page.builder()
                 .book(book)
                 .pageNumber(pageNumber)
-                .originalPageIndex(pageNumber-1)
                 .s3FilePath(pagePath)
                 .build();
         pageRepository.save(page);

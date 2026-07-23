@@ -17,12 +17,6 @@ import java.util.UUID;
                         name = "uq_book_pages_book_page",
                         columnNames = {"book_id", "page_number"}
                 )
-        },
-        indexes = {
-                @Index(
-                        name = "idx_book_pages_book_source",
-                        columnList = "book_id, source_type"
-                )
         }
 )
 @Getter
@@ -48,10 +42,8 @@ public class Page {
     @Column(name = "page_number", nullable = false)
     private Integer pageNumber;
 
-    @Column(name = "original_page_index")
-    private Integer originalPageIndex;
 
-    @Column(name = "s3_patch_path", length = 512)
+    @Column(name = "s3_file_path", length = 512)
     private String s3FilePath;
 
     @CreationTimestamp
