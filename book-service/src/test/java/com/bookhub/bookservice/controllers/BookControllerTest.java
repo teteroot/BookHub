@@ -131,7 +131,7 @@ class BookControllerTest {
     void testSuccessfulGetBook() throws Exception {
         var uuid = UUID.randomUUID();
         var book = Book.builder().id(uuid).build();
-        when(bookOrchestrator.loadBookByUUID(uuid)).thenReturn(book);
+        when(bookOrchestrator.loadBookByUUID(uuid, null)).thenReturn(book);
         when(bookMapper.toDto(book, 0))
                 .thenReturn(new BookResponseDto(
                         uuid, "", "", 5, UUID.randomUUID(), BookStatus.DRAFT, Instant.now(), 0, "", ""
@@ -144,7 +144,7 @@ class BookControllerTest {
     @Test
     void testGetNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadBookByUUID(uuid)).thenThrow(new BookNotFoundException());
+        when(bookOrchestrator.loadBookByUUID(uuid, null)).thenThrow(new BookNotFoundException());
         mockMvc.perform(get("/api/v1/books/{uuid}", uuid))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Book not found"));
@@ -153,7 +153,7 @@ class BookControllerTest {
     @Test
     void testDownloadBookWithoutPrincipal_publicBookAllowed() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(eq(uuid),isNull()))
                 .thenReturn(InputStream.nullInputStream());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -188,7 +188,7 @@ class BookControllerTest {
     @Test
     void testDownloadForbiddenDraftBook_anonymousAccess() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(eq(uuid), isNull()))
                 .thenThrow(new BookAccessDeniedException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -199,7 +199,7 @@ class BookControllerTest {
     @Test
     void testDownloadNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(eq(uuid), isNull()))
                 .thenThrow(new BookNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
@@ -210,11 +210,12 @@ class BookControllerTest {
     @Test
     void testDownloadBookWithNoContentYet() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadBookStream(isNull(), eq(uuid)))
+        when(bookOrchestrator.loadBookStream(eq(uuid), isNull()))
                 .thenThrow(new BookContentNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Book content not found"));
     }
 
     @Test

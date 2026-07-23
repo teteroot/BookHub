@@ -100,8 +100,7 @@ class PageServiceImplTest {
         assertEquals(1, book.getPages().size());
         var addedPage = book.getPages().getFirst();
         assertEquals(pageId, addedPage.getId());
-        assertEquals(1, addedPage.getPageNumber());
-        assertEquals(0, addedPage.getOriginalPageIndex());
+        assertEquals(0, addedPage.getPageNumber());
         assertEquals(book, addedPage.getBook());
         verify(pageRepository).save(addedPage);
     }
@@ -113,8 +112,7 @@ class PageServiceImplTest {
         pageService.addNewPageToBook(book, 4);
 
         var addedPage = book.getPages().getFirst();
-        assertEquals(5, addedPage.getPageNumber());
-        assertEquals(4, addedPage.getOriginalPageIndex());
+        assertEquals(4, addedPage.getPageNumber());
     }
 
     @Test

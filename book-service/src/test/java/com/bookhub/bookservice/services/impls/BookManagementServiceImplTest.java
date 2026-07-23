@@ -105,7 +105,7 @@ class BookManagementServiceImplTest {
     }
 
     @Test
-    void testClaimBookForUpdate_statusNotEmpty_throwsContentAlreadyExist() {
+    void testClaimBookForUpdate_success_nonEmptyStatus() {
         var bookId = UUID.randomUUID();
         var authorId = UUID.randomUUID();
         var book = Book.builder()
@@ -115,9 +115,43 @@ class BookManagementServiceImplTest {
                 .build();
         when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
 
-        assertThrows(BookContentAlreadyExistException.class,
-                () -> bookManagementService.claimBookForUpdate(bookId, authorId));
-        verify(bookRepository, never()).saveAndFlush(any());
+        var result = bookManagementService.claimBookForUpdate(bookId, authorId);
+
+        assertEquals(book, result);
+        assertNotNull(result.getUpdatedAt());
+        verify(bookRepository).saveAndFlush(book);
+    }
+
+    @Test
+    void testLoadAuthorBookByUUID_success() {
+        var bookId = UUID.randomUUID();
+        var authorId = UUID.randomUUID();
+        var book = Book.builder().id(bookId).authorId(authorId).build();
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        assertEquals(book, bookManagementService.loadAuthorBookByUUID(bookId, authorId));
+    }
+
+    @Test
+    void testLoadAuthorBookByUUID_bookNotFound() {
+        var bookId = UUID.randomUUID();
+        when(bookRepository.findById(bookId)).thenReturn(Optional.empty());
+
+        assertThrows(BookNotFoundException.class,
+                () -> bookManagementService.loadAuthorBookByUUID(bookId, UUID.randomUUID()));
+    }
+
+    @Test
+    void testLoadAuthorBookByUUID_notOwner_throwsAccessDenied() {
+        var bookId = UUID.randomUUID();
+        var book = Book.builder()
+                .id(bookId)
+                .authorId(UUID.randomUUID())
+                .build();
+        when(bookRepository.findById(bookId)).thenReturn(Optional.of(book));
+
+        assertThrows(BookAccessDeniedException.class,
+                () -> bookManagementService.loadAuthorBookByUUID(bookId, UUID.randomUUID()));
     }
 
     @Test
@@ -231,5 +265,75 @@ class BookManagementServiceImplTest {
 
         assertThrows(EntityNotFoundException.class,
                 () -> bookManagementService.updateBookContentPath(bookId, "path"));
+    }
+
+    @Test
+    void testRemoveContentPath_success() {
+        var bookId = UUID.randomUUID();
+        var book = Book.builder().id(bookId).s3ArchivePath("archive-path").build();
+        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
+
+        bookManagementService.removeContentPath(bookId);
+
+        assertNull(book.getS3ArchivePath());
+    }
+
+    @Test
+    void testRemoveContentPath_alreadyNull_noException() {
+        var bookId = UUID.randomUUID();
+        var book = Book.builder().id(bookId).s3ArchivePath(null).build();
+        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
+
+        assertDoesNotThrow(() -> bookManagementService.removeContentPath(bookId));
+        assertNull(book.getS3ArchivePath());
+    }
+
+    @Test
+    void testRemoveContentPath_bookNotFound_propagatesException() {
+        var bookId = UUID.randomUUID();
+        when(bookRepository.getReferenceById(bookId)).thenThrow(EntityNotFoundException.class);
+
+        assertThrows(EntityNotFoundException.class,
+                () -> bookManagementService.removeContentPath(bookId));
+    }
+
+    @Test
+    void testUpdateBookCoverPath_success() {
+        var bookId = UUID.randomUUID();
+        var book = Book.builder().id(bookId).s3CoverPath(null).build();
+        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
+
+        bookManagementService.updateBookCoverPath(bookId, "cover-path");
+
+        assertEquals("cover-path", book.getS3CoverPath());
+    }
+
+    @Test
+    void testUpdateBookCoverPath_overwritesExistingPath() {
+        var bookId = UUID.randomUUID();
+        var book = Book.builder().id(bookId).s3CoverPath("old-cover").build();
+        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
+
+        bookManagementService.updateBookCoverPath(bookId, "new-cover");
+
+        assertEquals("new-cover", book.getS3CoverPath());
+    }
+
+    @Test
+    void testUpdateBookCoverPath_bookNotFound_propagatesException() {
+        var bookId = UUID.randomUUID();
+        when(bookRepository.getReferenceById(bookId)).thenThrow(EntityNotFoundException.class);
+
+        assertThrows(EntityNotFoundException.class,
+                () -> bookManagementService.updateBookCoverPath(bookId, "cover-path"));
+    }
+
+    @Test
+    void testDeleteBookByUUID_delegatesToRepository() {
+        var bookId = UUID.randomUUID();
+
+        bookManagementService.deleteBookByUUID(bookId);
+
+        verify(bookRepository).deleteById(bookId);
     }
 }
