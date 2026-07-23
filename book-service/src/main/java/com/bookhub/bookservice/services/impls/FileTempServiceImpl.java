@@ -30,7 +30,7 @@ class FileTempServiceImpl implements FileTempService {
         try (OutputStream os = new FileOutputStream(tempFile.toFile())) {
             writer.accept(os);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             deleteQuietly(List.of(tempFile));
             throw new ContentSaveException();
         }
