@@ -227,7 +227,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
         }
-        var page = pageService.claimPageForUpload(pageId,bookId);
+        var page = pageService.claimPageForUpdate(pageId,bookId);
         var pageFiles = pdfService.loadPages(content);
         try {
             if (pageFiles.size() != 1){
@@ -303,6 +303,17 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         } finally {
             fileTempService.deleteQuietly(pageFiles);
         }
+    }
+
+    @Override
+    public void deleteBookPage(UUID bookId, UUID authorId, UUID pageId) {
+        var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)){
+            throw new BookNotDraftingException();
+        }
+        var page = pageService.claimPageForUpdate(pageId,bookId);
+        pageService.deleteBookPage(page, bookId);
+        bookStorageService.removeBookStorageContent(page.getS3FilePath());
     }
 
     private String cacheBookContent(UUID bookId){

@@ -29,4 +29,11 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
            """)
     void shiftPagesRight(@Param("bookId") UUID bookId, @Param("pageNumber") int pageNumber);
 
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Page p
+            SET p.pageNumber = p.pageNumber + -1
+            WHERE p.book.id = :bookId AND p.pageNumber >= :pageNumber
+           """)
+    void shiftPagesLeft(@Param("bookId") UUID bookId, @Param("pageNumber") int pageNumber);
 }

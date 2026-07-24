@@ -18,9 +18,11 @@ public interface PageService {
 
     List<Page> loadBookPagesSortedByPageNumber(UUID bookId);
 
-    Page claimPageForUpload(UUID pageId,UUID bookId);
+    Page claimPageForUpdate(UUID pageId, UUID bookId);
 
     Page claimPageForUploadByNumber(UUID bookId, Integer pageNumber);
 
     void putNewPageToBook(Book book, String pagePath, int pageNumber);
+
+    void deleteBookPage(Page page, UUID bookId);
 }

@@ -226,7 +226,7 @@ class BookOrchestratorImplTest {
         var page = Page.builder().s3FilePath("old-page").build();
         var file = Path.of("page.pdf");
         when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
-        when(pageService.claimPageForUpload(page.getId(), book.getId())).thenReturn(page);
+        when(pageService.claimPageForUpdate(page.getId(), book.getId())).thenReturn(page);
         when(pdfService.loadPages(any())).thenReturn(List.of(file));
         when(fileTempService.openStream(file)).thenReturn(InputStream.nullInputStream());
         when(fileTempService.sizeOf(file)).thenReturn(7L);
@@ -242,7 +242,7 @@ class BookOrchestratorImplTest {
     void updatePageContent_rejectsMultiplePages() {
         var book = book(BookStatus.DRAFT);
         when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
-        when(pageService.claimPageForUpload(any(), eq(book.getId()))).thenReturn(Page.builder().build());
+        when(pageService.claimPageForUpdate(any(), eq(book.getId()))).thenReturn(Page.builder().build());
         when(pdfService.loadPages(any())).thenReturn(List.of(Path.of("1.pdf"), Path.of("2.pdf")));
 
         assertThrows(TooManyPagesException.class,

@@ -58,7 +58,7 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
-    public Page claimPageForUpload(UUID pageId, UUID bookId) {
+    public Page claimPageForUpdate(UUID pageId, UUID bookId) {
         var page = pageRepository.findPageByIdAndBook_Id(pageId, bookId)
                 .orElseThrow(PageNotFoundException::new);
         page.setUpdatedAt(Instant.now());
@@ -94,6 +94,13 @@ public class PageServiceImpl implements PageService {
                 .s3FilePath(pagePath)
                 .build();
         pageRepository.save(page);
+    }
+
+    @Override
+    @Transactional
+    public void deleteBookPage(Page page, UUID bookId) {
+        pageRepository.shiftPagesLeft(bookId,page.getPageNumber());
+        pageRepository.delete(page);
     }
 
 
