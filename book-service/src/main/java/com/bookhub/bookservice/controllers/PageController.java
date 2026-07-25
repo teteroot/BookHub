@@ -6,6 +6,7 @@ import com.bookhub.bookservice.validators.PDFValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -62,6 +63,17 @@ public class PageController {
         try(InputStream content = pdf.getInputStream()) {
             bookOrchestrator.createBookPage(bookId, userDetails.getUserId() , pageNumber, content);
         }
+        return ResponseEntity.status(HttpStatus.CREATED).build();
+
+    }
+
+    @PatchMapping("/{pageId}/swap")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> swapPages(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                           @PathVariable UUID bookId,
+                                           @PathVariable UUID pageId,
+                                           @RequestParam UUID swapPageId){
+        bookOrchestrator.swapBookPages(bookId, userDetails.getUserId(), pageId, swapPageId);
         return ResponseEntity.noContent().build();
 
     }
@@ -72,7 +84,7 @@ public class PageController {
                                            @PathVariable UUID bookId,
                                            @PathVariable UUID pageId){
         bookOrchestrator.deleteBookPage(bookId, userDetails.getUserId(),pageId);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
 
     }
 }

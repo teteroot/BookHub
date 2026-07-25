@@ -27,6 +27,8 @@ public interface BookOrchestrator {
 
     void deleteBookPage(UUID bookId, UUID authorId, UUID pageId);
 
+    void swapBookPages(UUID bookId, UUID authorId, UUID pageId, UUID swapPageId);
+
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
 

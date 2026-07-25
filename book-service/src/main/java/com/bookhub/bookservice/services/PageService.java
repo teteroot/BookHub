@@ -25,4 +25,6 @@ public interface PageService {
     void putNewPageToBook(Book book, String pagePath, int pageNumber);
 
     void deleteBookPage(Page page, UUID bookId);
+
+    void swapPages(Page page, Page swappedPage);
 }

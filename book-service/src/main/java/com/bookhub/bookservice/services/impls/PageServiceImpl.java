@@ -103,5 +103,13 @@ public class PageServiceImpl implements PageService {
         pageRepository.delete(page);
     }
 
+    @Override
+    @Transactional
+    public void swapPages(Page page, Page swappedPage) {
+        int tempPageNumber = page.getPageNumber();
+        page.setPageNumber(swappedPage.getPageNumber());
+        swappedPage.setPageNumber(tempPageNumber);
+    }
+
 
 }

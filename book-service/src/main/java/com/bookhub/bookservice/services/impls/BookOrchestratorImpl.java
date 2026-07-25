@@ -317,6 +317,18 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         bookStorageService.removeBookStorageContent(page.getS3FilePath());
     }
 
+    @Override
+    public void swapBookPages(UUID bookId, UUID authorId, UUID pageId, UUID swapPageId) {
+        var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)){
+            throw new BookNotDraftingException();
+        }
+        var page = pageService.claimPageForUpdate(pageId,bookId);
+        var swappedPage = pageService.claimPageForUpdate(swapPageId,bookId);
+        bookManagementService.removeContentPath(bookId);
+        pageService.swapPages(page,swappedPage);
+    }
+
     private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
         if (pages.isEmpty()){
