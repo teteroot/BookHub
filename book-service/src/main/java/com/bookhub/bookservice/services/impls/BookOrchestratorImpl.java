@@ -312,6 +312,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
             throw new BookNotDraftingException();
         }
         var page = pageService.claimPageForUpdate(pageId,bookId);
+        bookManagementService.removeContentPath(bookId);
         pageService.deleteBookPage(page, bookId);
         bookStorageService.removeBookStorageContent(page.getS3FilePath());
     }
