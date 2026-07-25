@@ -27,4 +27,6 @@ public interface PageService {
     void deleteBookPage(Page page, UUID bookId);
 
     void swapPages(Page page, Page swappedPage);
+
+    void movePageTo(Page page, UUID bookId , Integer pageNumber);
 }

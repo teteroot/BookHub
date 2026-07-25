@@ -70,10 +70,21 @@ public class PageController {
     @PatchMapping("/{pageId}/swap")
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> swapPages(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                           @PathVariable UUID bookId,
-                                           @PathVariable UUID pageId,
-                                           @RequestParam UUID swapPageId){
+                                          @PathVariable UUID bookId,
+                                          @PathVariable UUID pageId,
+                                          @RequestParam UUID swapPageId){
         bookOrchestrator.swapBookPages(bookId, userDetails.getUserId(), pageId, swapPageId);
+        return ResponseEntity.noContent().build();
+
+    }
+
+    @PatchMapping("/{pageId}/move")
+    @PreAuthorize("hasRole('AUTHOR')")
+    public ResponseEntity<Void> movePage(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                          @PathVariable UUID bookId,
+                                          @PathVariable UUID pageId,
+                                          @RequestParam Integer pageNumber){
+        bookOrchestrator.moveBookPage(bookId, userDetails.getUserId(), pageId, pageNumber);
         return ResponseEntity.noContent().build();
 
     }

@@ -329,6 +329,17 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         pageService.swapPages(page,swappedPage);
     }
 
+    @Override
+    public void moveBookPage(UUID bookId, UUID authorId, UUID pageId, Integer pageNumber) {
+        var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
+        if (!book.getStatus().equals(BookStatus.DRAFT)){
+            throw new BookNotDraftingException();
+        }
+        var page = pageService.claimPageForUpdate(pageId,bookId);
+        bookManagementService.removeContentPath(bookId);
+        pageService.movePageTo(page,bookId, pageNumber);
+    }
+
     private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
         if (pages.isEmpty()){

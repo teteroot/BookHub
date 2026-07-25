@@ -111,5 +111,14 @@ public class PageServiceImpl implements PageService {
         swappedPage.setPageNumber(tempPageNumber);
     }
 
+    @Override
+    @Transactional
+    public void movePageTo(Page page, UUID bookId, Integer pageNumber) {
+        pageRepository.shiftPagesLeft(bookId,page.getPageNumber());
+        pageRepository.shiftPagesRight(bookId,pageNumber);
+        page.setPageNumber(pageNumber);
+        pageRepository.save(page);
+    }
+
 
 }
