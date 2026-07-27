@@ -335,6 +335,9 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
         }
+        if (pageNumber < 1 || pageNumber > pageService.getCountOfPages(bookId)){
+            throw new InvalidPageNumberException();
+        }
         var page = pageService.claimPageForUpdate(pageId,bookId);
         bookManagementService.removeContentPath(bookId);
         pageService.movePageTo(page,bookId, pageNumber);
