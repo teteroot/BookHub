@@ -87,7 +87,7 @@ public class PageServiceImpl implements PageService {
     @Override
     @Transactional
     public void putNewPageToBook(Book book, String pagePath, int pageNumber) {
-        pageRepository.shiftPagesRight(book.getId(),pageNumber);
+        pageRepository.shiftAllPagesRightFrom(book.getId(),pageNumber);
         var page = Page.builder()
                 .book(book)
                 .pageNumber(pageNumber)
@@ -99,7 +99,7 @@ public class PageServiceImpl implements PageService {
     @Override
     @Transactional
     public void deleteBookPage(Page page, UUID bookId) {
-        pageRepository.shiftPagesLeft(bookId,page.getPageNumber());
+        pageRepository.shiftAllPagesLeftFrom(bookId,page.getPageNumber());
         pageRepository.delete(page);
     }
 
@@ -114,8 +114,14 @@ public class PageServiceImpl implements PageService {
     @Override
     @Transactional
     public void movePageTo(Page page, UUID bookId, Integer pageNumber) {
-        pageRepository.shiftPagesLeft(bookId,page.getPageNumber());
-        pageRepository.shiftPagesRight(bookId,pageNumber);
+        if (page.getPageNumber().equals(pageNumber)) {
+            return;
+        }
+        else if (pageNumber > page.getPageNumber()) {
+            pageRepository.shiftPagesLeft(bookId,page.getPageNumber(),pageNumber);
+        } else {
+            pageRepository.shiftPagesRight(bookId,pageNumber,page.getPageNumber());
+        }
         page.setPageNumber(pageNumber);
         pageRepository.save(page);
     }

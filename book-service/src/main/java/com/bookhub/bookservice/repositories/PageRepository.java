@@ -25,15 +25,36 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
     @Query("""
             UPDATE Page p
             SET p.pageNumber = p.pageNumber + 1
-            WHERE p.book.id = :bookId AND p.pageNumber >= :pageNumber
+            WHERE p.book.id = :bookId
+            AND p.pageNumber >= :from
+            AND p.pageNumber <= :to
            """)
-    void shiftPagesRight(@Param("bookId") UUID bookId, @Param("pageNumber") int pageNumber);
+    void shiftPagesRight(@Param("bookId") UUID bookId, @Param("from") int from, @Param("to") int to);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Page p
+            SET p.pageNumber = p.pageNumber + 1
+            WHERE p.book.id = :bookId AND p.pageNumber >= :from
+           """)
+    void shiftAllPagesRightFrom(@Param("bookId") UUID bookId, @Param("from") int from);
+
 
     @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Page p
             SET p.pageNumber = p.pageNumber + -1
-            WHERE p.book.id = :bookId AND p.pageNumber >= :pageNumber
+            WHERE p.book.id = :bookId AND p.pageNumber >= :from
            """)
-    void shiftPagesLeft(@Param("bookId") UUID bookId, @Param("pageNumber") int pageNumber);
+    void shiftAllPagesLeftFrom(@Param("bookId") UUID bookId, @Param("from") int from);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Page p
+            SET p.pageNumber = p.pageNumber + -1
+            WHERE p.book.id = :bookId
+            AND p.pageNumber >= :from
+            AND p.pageNumber <= :to
+           """)
+    void shiftPagesLeft(@Param("bookId") UUID bookId, @Param("from") int from, @Param("to") int to);
 }
