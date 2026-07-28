@@ -343,6 +343,13 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         pageService.movePageTo(page,bookId, pageNumber);
     }
 
+    @Override
+    public void checkBookAvailability(UUID bookId) {
+        if (!bookManagementService.isExistAndPublishedBook(bookId)){
+            throw new BookNotFoundException();
+        }
+    }
+
     private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
         if (pages.isEmpty()){

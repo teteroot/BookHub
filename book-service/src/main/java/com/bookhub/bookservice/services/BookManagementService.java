@@ -24,4 +24,6 @@ public interface BookManagementService {
     void updateBookCoverPath(UUID bookId, String coverPath);
 
     void deleteBookByUUID(UUID bookId);
+
+    boolean isExistAndPublishedBook(UUID bookId);
 }

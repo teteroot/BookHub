@@ -104,4 +104,9 @@ public class BookManagementServiceImpl implements BookManagementService {
         bookRepository.deleteById(bookId);
     }
 
+    @Override
+    public boolean isExistAndPublishedBook(UUID bookId) {
+        return bookRepository.existsByIdAndStatus(bookId,BookStatus.PUBLISHED);
+    }
+
 }

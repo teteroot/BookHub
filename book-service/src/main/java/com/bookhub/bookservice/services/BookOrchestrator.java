@@ -31,6 +31,8 @@ public interface BookOrchestrator {
 
     void moveBookPage(UUID bookId, UUID authorId, UUID pageId, Integer pageNumber);
 
+    void checkBookAvailability(UUID bookId);
+
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
 

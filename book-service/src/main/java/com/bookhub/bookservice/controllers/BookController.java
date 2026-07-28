@@ -35,6 +35,12 @@ public class BookController {
     private final CoverValidator coverValidator;
     private final PDFValidator pdfValidator;
 
+    @GetMapping("/{uuid}/availability")
+    public ResponseEntity<Void> checkBookAvailability(@PathVariable UUID uuid){
+        bookOrchestrator.checkBookAvailability(uuid);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{uuid}")
     public ResponseEntity<BookResponseDto> getBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                    @PathVariable UUID uuid){
