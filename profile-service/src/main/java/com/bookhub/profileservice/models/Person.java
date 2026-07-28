@@ -39,7 +39,7 @@ public class Person {
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
-            name = "person_favorites",
+            name = "favorite_authors",
             joinColumns = @JoinColumn(name = "marked_as_favorite_by_id"),
             inverseJoinColumns = @JoinColumn(name = "favorite_author_id")
     )

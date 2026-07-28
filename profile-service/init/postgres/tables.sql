@@ -8,7 +8,7 @@ CREATE TABLE persons(
     role varchar(10) NOT NULL
 );
 
-CREATE TABLE person_favorites(
+CREATE TABLE favorite_authors(
     favorite_author_id UUID NOT NULL REFERENCES persons(id),
     marked_as_favorite_by_id UUID NOT NULL REFERENCES persons(id),
     PRIMARY KEY (favorite_author_id,marked_as_favorite_by_id)
