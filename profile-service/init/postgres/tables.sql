@@ -13,3 +13,11 @@ CREATE TABLE favorite_authors(
     marked_as_favorite_by_id UUID NOT NULL REFERENCES persons(id),
     PRIMARY KEY (favorite_author_id,marked_as_favorite_by_id)
 );
+
+CREATE TABLE favorite_books (
+    id UUID PRIMARY KEY,
+    book_id UUID NOT NULL,
+    person_id UUID NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_person_book UNIQUE (person_id, book_id)
+);
