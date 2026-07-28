@@ -29,16 +29,35 @@ public class FavoritesController {
     }
 
     @PostMapping("/authors/{uuid}")
-    public ResponseEntity<Void> addToFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
+    public ResponseEntity<Void> addToFavoriteAuthors(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                @PathVariable UUID uuid){
         favoritesService.addToFavoriteAuthors(userDetails.getUserId(),uuid);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/authors/{uuid}")
-    public ResponseEntity<Void> removeFromFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
+    public ResponseEntity<Void> removeFromFavoriteAuthors(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                     @PathVariable UUID uuid){
         favoritesService.removeFromFavoriteAuthors(userDetails.getUserId(),uuid);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @GetMapping("/books")
+    public ResponseEntity<List<UUID>> getMyFavoriteBooks(@AuthenticationPrincipal GatewayUserDetails userDetails){
+        return ResponseEntity.ok(favoritesService.loadFavoriteBooks(userDetails.getUserId()));
+    }
+
+    @PostMapping("/books/{uuid}")
+    public ResponseEntity<Void> addToFavoriteBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                               @PathVariable UUID uuid){
+        favoritesService.addBookToFavoriteBooks(userDetails.getUserId(),uuid);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @DeleteMapping("/books/{uuid}")
+    public ResponseEntity<Void> removeFromFavoriteBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                    @PathVariable UUID uuid){
+        favoritesService.removeFromFavoriteBooks(userDetails.getUserId(),uuid);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
