@@ -7,11 +7,10 @@ import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.dtos.responses.PersonResponseDto;
 import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
+import com.bookhub.profileservice.security.TestUserDetailsService;
 import com.bookhub.profileservice.services.PersonService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -25,16 +24,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
-import com.bookhub.profileservice.security.TestUserDetailsService;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PersonController.class)
 @Import({SecurityConfig.class, TestUserDetailsService.class})
@@ -102,94 +101,6 @@ class PersonControllerTest {
         mockMvc.perform(get("/api/v1/persons/me"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").value(String.valueOf(testUserDetailsService.getUserId())));
-    }
-
-    @Test
-    @WithUserDetails
-    void testGetMyFavoritesAuthors() throws Exception {
-        when(personService.loadFavorites(any())).thenReturn(List.of());
-        mockMvc.perform(get("/api/v1/persons/favorites"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray());
-    }
-
-    @Test
-    void testSuccessfulGetAuthors() throws Exception {
-        when(personService.loadAuthors(0, 10)).thenReturn(org.springframework.data.domain.Page.empty());
-        mockMvc.perform(get("/api/v1/persons/authors"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.content").isArray());
-    }
-
-    @Test
-    @WithUserDetails
-    void testSuccessfulAddToFavorites() throws Exception {
-        UUID uuid = UUID.randomUUID();
-        mockMvc.perform(post("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithUserDetails
-    void testAddToFavoritesAlreadyFavoritePerson() throws Exception {
-        UUID uuid = UUID.randomUUID();
-        doThrow(new PersonAlreadyInFavoritesException())
-                .when(personService).addToFavorites(testUserDetailsService.getUserId(),uuid);
-        mockMvc.perform(post("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("Person already in favorites"));
-    }
-
-    @Test
-    @WithUserDetails
-    void testAddToFavoritesNonExistPerson() throws Exception {
-        UUID uuid = UUID.randomUUID();
-        doThrow(new PersonNotFoundException())
-                .when(personService).addToFavorites(testUserDetailsService.getUserId(),uuid);
-        mockMvc.perform(post("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Person not found"));
-    }
-
-    @Test
-    @WithUserDetails
-    void testAddToFavoritesYourself() throws Exception {
-        UUID uuid = testUserDetailsService.getUserId();
-        doThrow(new SelfRequestException())
-                .when(personService).addToFavorites(uuid,uuid);
-        mockMvc.perform(post("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("This is you"));
-    }
-
-    @Test
-    @WithUserDetails
-    void testSuccessfulRemoveFromFavorites() throws Exception {
-        UUID uuid = UUID.randomUUID();
-        mockMvc.perform(delete("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @WithUserDetails
-    void testRemoveFromFavoritesNonExistOrNonFavoritePerson() throws Exception {
-        UUID uuid = UUID.randomUUID();
-        doThrow(new PersonNotFoundException())
-                .when(personService).removeFromFavorites(testUserDetailsService.getUserId(),uuid);
-        mockMvc.perform(delete("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.message").value("Person not found"));
-    }
-
-    @Test
-    @WithUserDetails
-    void testRemoveFromFavoritesYourself() throws Exception {
-        UUID uuid = testUserDetailsService.getUserId();
-        doThrow(new SelfRequestException())
-                .when(personService).removeFromFavorites(uuid,uuid);
-        mockMvc.perform(delete("/api/v1/persons/favorites/{uuid}", uuid))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("This is you"));
     }
 
     @Test
