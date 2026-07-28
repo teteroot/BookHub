@@ -31,7 +31,7 @@ public class FavoriteBook {
 
 
     @Column(name = "person_id", nullable = false)
-    private UUID person_id;
+    private UUID personId;
 
     @CreationTimestamp
     private Instant createdAt;
