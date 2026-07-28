@@ -3,7 +3,9 @@ package com.bookhub.profileservice.services.imps;
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.exceptions.extensions.*;
+import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyExistsException;
+import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.repositories.PersonRepository;
@@ -15,8 +17,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -60,43 +60,7 @@ public class PersonServiceImpl implements PersonService {
         personRepository.save(person);
     }
 
-    @Override
-    @Transactional
-    public List<Person> loadFavorites(UUID userId) {
-        var person = personRepository.findById(userId)
-                .orElseThrow(PersonNotFoundException::new);
-        return new ArrayList<>(person.getFavoriteAuthors());
-    }
 
-    @Override
-    @Transactional
-    public void addToFavorites(UUID userId, UUID targetPersonId) {
-        if (userId.equals(targetPersonId)){
-            throw new SelfRequestException();
-        }
-        if (!personRepository.existsById(userId) || !personRepository.existsById(targetPersonId)){
-            throw new PersonNotFoundException();
-        }
-        if (personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
-            throw new PersonAlreadyInFavoritesException();
-        }
-        personRepository.addPersonToFavoriteAuthors(userId, targetPersonId);
-    }
-
-    @Override
-    @Transactional
-    public void removeFromFavorites(UUID userId, UUID targetPersonId) {
-        if (userId.equals(targetPersonId)){
-            throw new SelfRequestException();
-        }
-        if (!personRepository.existsById(userId) || !personRepository.existsById(targetPersonId)){
-            throw new PersonNotFoundException();
-        }
-        if (!personRepository.existsByIdAndFavoriteAuthorsId(userId, targetPersonId)) {
-            throw new PersonNotFoundException();
-        }
-        personRepository.removePersonFromPersonFavoritesAuthors(userId, targetPersonId);
-    }
 
     @Override
     @Transactional

@@ -15,7 +15,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -39,12 +38,6 @@ public class PersonController {
         return ResponseEntity.ok(userDetails.getUserId().toString());
     }
 
-    @GetMapping("/favorites")
-    public ResponseEntity<List<PersonResponseDto>> getMyFavoritesAuthors(@AuthenticationPrincipal GatewayUserDetails userDetails){
-        var dto = personService.loadFavorites(userDetails.getUserId())
-                .stream().map(personMapper::toDto).toList();
-        return ResponseEntity.ok(dto);
-    }
 
     @GetMapping("/authors")
     public ResponseEntity<PagedModel<PersonResponseDto>> getAuthors(@RequestParam(defaultValue = "0",required = false) int page){
@@ -52,20 +45,6 @@ public class PersonController {
         var dto = personService.loadAuthors(page,10)
                 .map(personMapper::toDto);
         return ResponseEntity.ok(new PagedModel<>(dto));
-    }
-
-    @PostMapping("/favorites/{uuid}")
-    public ResponseEntity<Void> addToFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                                                         @PathVariable UUID uuid){
-        personService.addToFavorites(userDetails.getUserId(),uuid);
-        return new ResponseEntity<>(HttpStatus.OK);
-    }
-
-    @DeleteMapping("/favorites/{uuid}")
-    public ResponseEntity<Void> removeFromFavorites(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                               @PathVariable UUID uuid){
-        personService.removeFromFavorites(userDetails.getUserId(),uuid);
-        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @GetMapping("/search")
