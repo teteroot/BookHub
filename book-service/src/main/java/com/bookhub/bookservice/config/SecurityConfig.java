@@ -1,7 +1,8 @@
 package com.bookhub.bookservice.config;
 
-import com.bookhub.bookservice.security.GatewayVerificationFilter;
-import com.bookhub.bookservice.security.HeaderFilter;
+import com.bookhub.bookservice.security.filters.GatewayVerificationFilter;
+import com.bookhub.bookservice.security.filters.HeaderFilter;
+import com.bookhub.bookservice.security.filters.InternalVerificationFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +27,7 @@ public class SecurityConfig {
 
     private final HeaderFilter headerFilter;
     private final GatewayVerificationFilter gatewayVerificationFilter;
+    private final InternalVerificationFilter internalVerificationFilter;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http){
@@ -43,7 +45,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/*/pages/*").permitAll()
                         .anyRequest().fullyAuthenticated()
 
-                ).addFilterBefore(headerFilter, UsernamePasswordAuthenticationFilter.class)
+                ).addFilterBefore(internalVerificationFilter, UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(headerFilter, InternalVerificationFilter.class)
                 .addFilterBefore(gatewayVerificationFilter, HeaderFilter.class);
         return http.build();
     }

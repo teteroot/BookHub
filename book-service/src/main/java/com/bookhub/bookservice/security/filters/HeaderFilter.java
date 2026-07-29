@@ -1,7 +1,8 @@
-package com.bookhub.bookservice.security;
+package com.bookhub.bookservice.security.filters;
 
 import com.bookhub.bookservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.bookservice.enums.UserRole;
+import com.bookhub.bookservice.security.GatewayUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
