@@ -58,6 +58,9 @@ public class Book {
     @Column(name = "s3_cover_path", length = 512)
     private String s3CoverPath;
 
+    @Column(name = "count_of_stars")
+    private Integer countOfStars;
+
     @OneToMany(
             mappedBy = "book",
             cascade = CascadeType.ALL,
@@ -82,11 +85,6 @@ public class Book {
     public void addPage(Page page) {
         pages.add(page);
         page.setBook(this);
-    }
-
-    public void removePage(Page page) {
-        pages.remove(page);
-        page.setBook(null);
     }
 
     @Override

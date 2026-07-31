@@ -11,5 +11,5 @@ import java.util.UUID;
  */
 public record BookResponseDto(UUID id, String title, String description, Integer ageLimit, UUID authorId,
                               BookStatus status, Instant dateOfPublishing, Integer countOfPages, String s3ArchivePath,
-                              String s3CoverPath) implements Serializable {
+                              String s3CoverPath, Integer countOfStars) implements Serializable {
 }

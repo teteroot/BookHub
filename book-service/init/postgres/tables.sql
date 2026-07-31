@@ -8,6 +8,7 @@ CREATE TABLE books (
     date_of_publishing TIMESTAMPTZ,
     s3_archive_path VARCHAR(512),
     s3_cover_path VARCHAR(512),
+    count_of_stars INTEGER default 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,
     version BIGINT NOT NULL DEFAULT 0
