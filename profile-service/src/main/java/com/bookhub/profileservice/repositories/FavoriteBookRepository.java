@@ -15,5 +15,5 @@ public interface FavoriteBookRepository extends CrudRepository<FavoriteBook, UUI
     boolean existsByPersonIdAndBookId(UUID personId, UUID bookId);
     List<FavoriteBook> findAllByPersonIdOrderByCreatedAtDesc(UUID personId);
 
-    void deleteByPersonIdAndBookId(UUID personId, UUID bookId);
+    int deleteByPersonIdAndBookId(UUID personId, UUID bookId);
 }
