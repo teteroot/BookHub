@@ -1,12 +1,10 @@
 package com.bookhub.profileservice.ports;
 
-import java.util.UUID;
-
 public interface BookProvisioningPort {
 
-    void verifyBookAvailability(String userId, String bookId);
+    void verifyBookAvailability(String personId, String bookId);
 
-    void addStar(UUID bookId);
+    void addStar(String personId, String bookId);
 
-    void removeStar(UUID bookId);
+    void removeStar(String personId, String bookId);
 }

@@ -3,6 +3,7 @@ package com.bookhub.profileservice.handlers;
 
 import com.bookhub.profileservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.profileservice.exceptions.BadRequestException;
+import com.bookhub.profileservice.exceptions.InternalServerErrorException;
 import com.bookhub.profileservice.exceptions.NotFoundException;
 import com.bookhub.profileservice.exceptions.extensions.RemoteServiceException;
 import org.springframework.http.HttpStatus;
@@ -50,6 +51,12 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RemoteServiceException.class)
     public ResponseEntity<String> handleRemoteServiceException(RemoteServiceException e) {
         return ResponseEntity.status(e.getStatusCode()).body(e.getBody());
+    }
+
+    @ExceptionHandler(InternalServerErrorException.class)
+    public ResponseEntity<ErrorResponseDto> handleInternalServerErrorException(InternalServerErrorException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 500);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
 
 }
