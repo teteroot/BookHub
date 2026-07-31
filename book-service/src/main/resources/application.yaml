@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: book-service
+  datasource:
+    url: jdbc:postgresql://localhost:5430/Book
+    username: root
+    password: root
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 50MB
+  cloud:
+    aws:
+
+      s3:
+        endpoint: http://localhost:9000
+        path-style-access-enabled: true
+        region: us-east-1
+      credentials:
+        access-key: minioadmin
+        secret-key: minioadmin
+    storage:
+      bucket-name: pdf-bucket
+      content-type: application/pdf
+      destination: books/%s
+      page-destination: /pages
+      file-extension: .pdf
+      cover-destination: /cover
+    cover:
+      common-type: image/webp
+      dpi: 150
+      supported-types:
+        - image/webp
+        - image/png
+        - image/jpeg
+      target-ratio: '0.70710678' # ~ √2/2, base A4 format
+      ratio-tolerance: 0.02
+server:
+  port: 8002
+security:
+  origin:
+    gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+    internal-secret: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264

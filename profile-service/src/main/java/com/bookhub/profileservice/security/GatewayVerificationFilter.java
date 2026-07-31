@@ -11,6 +11,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
 
 @RequiredArgsConstructor
 @Component
@@ -24,7 +26,7 @@ public class GatewayVerificationFilter extends OncePerRequestFilter {
     @NullMarked
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var secret = request.getHeader(REQUEST_HEADER_NAME);
-        if (secret == null || !secret.equals(securityOriginProperties.getGatewaySecret())) {
+        if (secret == null || !MessageDigest.isEqual(securityOriginProperties.getGatewaySecret().getBytes(StandardCharsets.UTF_8), secret.getBytes())) {
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             return;
         }
