@@ -33,6 +33,10 @@ public interface BookOrchestrator {
 
     void checkBookAvailability(UUID bookId);
 
+    void starBook(UUID bookId);
+
+    void removeStarFromBook(UUID bookId);
+
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);
 

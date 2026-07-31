@@ -350,6 +350,16 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         }
     }
 
+    @Override
+    public void starBook(UUID bookId) {
+        bookManagementService.incrementBookStars(bookId, 1);
+    }
+
+    @Override
+    public void removeStarFromBook(UUID bookId) {
+        bookManagementService.incrementBookStars(bookId,-1);
+    }
+
     private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
         if (pages.isEmpty()){

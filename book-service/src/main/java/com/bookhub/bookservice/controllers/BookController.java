@@ -147,4 +147,18 @@ public class BookController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/{uuid}/star")
+    @PreAuthorize("hasRole('INTERNAL')")
+    public ResponseEntity<Void> starBook(@PathVariable UUID uuid) {
+        bookOrchestrator.starBook(uuid);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{uuid}/star")
+    @PreAuthorize("hasRole('INTERNAL')")
+    public ResponseEntity<Void> removeStarFromBook(@PathVariable UUID uuid) {
+        bookOrchestrator.removeStarFromBook(uuid);
+        return ResponseEntity.noContent().build();
+    }
+
 }

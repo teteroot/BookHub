@@ -26,4 +26,6 @@ public interface BookManagementService {
     void deleteBookByUUID(UUID bookId);
 
     boolean isExistAndPublishedBook(UUID bookId);
+
+    void incrementBookStars(UUID bookId, int weight);
 }

@@ -109,4 +109,12 @@ public class BookManagementServiceImpl implements BookManagementService {
         return bookRepository.existsByIdAndStatus(bookId,BookStatus.PUBLISHED);
     }
 
+    @Override
+    @Transactional
+    public void incrementBookStars(UUID bookId, int weight) {
+        if (bookRepository.incrementStars(bookId, weight) == 0){
+            throw new BookNotFoundException();
+        }
+    }
+
 }
