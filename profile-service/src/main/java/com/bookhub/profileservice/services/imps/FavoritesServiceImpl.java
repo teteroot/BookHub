@@ -1,9 +1,6 @@
 package com.bookhub.profileservice.services.imps;
 
-import com.bookhub.profileservice.exceptions.extensions.BookAlreadyInFavoritesException;
-import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
-import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
+import com.bookhub.profileservice.exceptions.extensions.*;
 import com.bookhub.profileservice.models.FavoriteBook;
 import com.bookhub.profileservice.models.Person;
 import com.bookhub.profileservice.ports.BookProvisioningPort;
@@ -72,19 +69,19 @@ public class FavoritesServiceImpl implements FavoritesService {
 
     @Override
     public void addBookToFavoriteBooks(UUID personId, UUID bookId) {
-        bookProvisioningPort.verifyBookAvailability(personId.toString(),bookId.toString());
         if (favoriteBookRepository.existsByPersonIdAndBookId(personId,bookId)){
             throw new BookAlreadyInFavoritesException();
         }
         if (!personRepository.existsById(personId)){
             throw new PersonNotFoundException();
         }
+        bookProvisioningPort.verifyBookAvailability(personId.toString(),bookId.toString());
         var favoriteBook = FavoriteBook.builder()
                 .bookId(bookId)
                 .personId(personId)
                 .build();
         favoriteBookRepository.save(favoriteBook);
-        bookProvisioningPort.addStar(bookId);
+        bookProvisioningPort.addStar(personId.toString(),bookId.toString());
     }
 
     @Override
@@ -92,8 +89,10 @@ public class FavoritesServiceImpl implements FavoritesService {
         if (!personRepository.existsById(personId)){
             throw new PersonNotFoundException();
         }
-        favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId);
-        bookProvisioningPort.removeStar(bookId);
+        if (favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId) == 0){
+            throw new BookNotInFavoritesException();
+        }
+        bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
     }
 
 }
