@@ -24,7 +24,7 @@ public class InternalVerificationFilter extends OncePerRequestFilter {
 
     private final SecurityOriginProperties securityOriginProperties;
 
-    private static final String INTERNAL_HEADER = "X-Internal-secret";
+    private static final String INTERNAL_HEADER = "X-Internal-Secret";
 
     @Override
     @NullMarked
