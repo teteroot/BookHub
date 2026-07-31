@@ -4,6 +4,7 @@ package com.bookhub.profileservice.handlers;
 import com.bookhub.profileservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.profileservice.exceptions.BadRequestException;
 import com.bookhub.profileservice.exceptions.NotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.RemoteServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -44,6 +45,11 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException e) {
         var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
+    @ExceptionHandler(RemoteServiceException.class)
+    public ResponseEntity<String> handleRemoteServiceException(RemoteServiceException e) {
+        return ResponseEntity.status(e.getStatusCode()).body(e.getBody());
     }
 
 }
