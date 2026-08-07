@@ -81,7 +81,12 @@ public class FavoritesServiceImpl implements FavoritesService {
                 .personId(personId)
                 .build();
         favoriteBookRepository.save(favoriteBook);
-        bookProvisioningPort.addStar(personId.toString(),bookId.toString());
+        try {
+            bookProvisioningPort.addStar(personId.toString(),bookId.toString());
+        } catch (RemoteInternalServerErrorException|RemoteServiceException e) {
+            favoriteBookRepository.delete(favoriteBook);
+            throw e;
+        }
     }
 
     @Override
