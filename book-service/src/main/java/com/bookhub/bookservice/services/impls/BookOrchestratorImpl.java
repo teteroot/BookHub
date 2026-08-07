@@ -4,6 +4,7 @@ import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
+import com.bookhub.bookservice.ports.ProfileProvisioningPort;
 import com.bookhub.bookservice.services.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     private final PageService pageService;
     private final FileTempService fileTempService;
     private final ImageService imageService;
+    private final ProfileProvisioningPort profileProvisioningPort;
 
     @Override
     public InputStream loadBookStream(UUID bookId, UUID authorId) {
@@ -168,6 +170,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public void deleteBook(UUID bookId, UUID authorId) {
         bookManagementService.loadAuthorBookByUUID(bookId,authorId);
+        profileProvisioningPort.removeBookReferencesFromAllFavorites(bookId.toString(), authorId.toString());
         bookManagementService.deleteBookByUUID(bookId);
         bookStorageService.removeBook(bookId);
     }
