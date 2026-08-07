@@ -100,4 +100,9 @@ public class FavoritesServiceImpl implements FavoritesService {
         bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
     }
 
+    @Override
+    public void removeFavoriteBookReferences(UUID bookId) {
+        favoriteBookRepository.deleteAllByBookId(bookId);
+    }
+
 }

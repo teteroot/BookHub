@@ -1,6 +1,7 @@
-package com.bookhub.profileservice.security;
+package com.bookhub.profileservice.security.filters;
 
 import com.bookhub.profileservice.enums.UserRole;
+import com.bookhub.profileservice.security.GatewayUserDetails;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -16,8 +17,8 @@ import java.util.UUID;
 
 @Component
 public class HeaderFilter extends OncePerRequestFilter {
-    private final String USER_ID_HEADER_NAME = "X-User-Id";
-    private final String USER_ROLE_HEADER_NAME = "X-User-Role";
+    private static final String USER_ID_HEADER_NAME = "X-User-Id";
+    private static final String USER_ROLE_HEADER_NAME = "X-User-Role";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {

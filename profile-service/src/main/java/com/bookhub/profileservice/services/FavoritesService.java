@@ -18,4 +18,6 @@ public interface FavoritesService {
     List<UUID> loadFavoriteBooks(UUID personId);
 
     void removeFromFavoriteBooks(UUID personId, UUID bookId);
+
+    void removeFavoriteBookReferences(UUID bookId);
 }

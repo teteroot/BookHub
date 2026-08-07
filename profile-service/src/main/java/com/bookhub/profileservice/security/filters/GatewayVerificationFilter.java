@@ -1,4 +1,4 @@
-package com.bookhub.profileservice.security;
+package com.bookhub.profileservice.security.filters;
 
 import com.bookhub.profileservice.config.properties.SecurityOriginProperties;
 import jakarta.servlet.FilterChain;

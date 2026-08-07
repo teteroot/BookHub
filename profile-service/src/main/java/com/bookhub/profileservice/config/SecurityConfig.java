@@ -1,7 +1,7 @@
 package com.bookhub.profileservice.config;
 
-import com.bookhub.profileservice.security.GatewayVerificationFilter;
-import com.bookhub.profileservice.security.HeaderFilter;
+import com.bookhub.profileservice.security.filters.GatewayVerificationFilter;
+import com.bookhub.profileservice.security.filters.HeaderFilter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

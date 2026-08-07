@@ -7,6 +7,7 @@ import com.bookhub.profileservice.services.FavoritesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -56,9 +57,16 @@ public class FavoritesController {
 
     @DeleteMapping("/books/{uuid}")
     public ResponseEntity<Void> removeFromFavoriteBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
-                                                    @PathVariable UUID uuid){
+                                                        @PathVariable UUID uuid){
         favoritesService.removeFromFavoriteBooks(userDetails.getUserId(),uuid);
         return new ResponseEntity<>(HttpStatus.OK);
+    }
+
+    @PreAuthorize("hasRole('INTERNAL')")
+    @DeleteMapping("/books/{uuid}/references")
+    public ResponseEntity<Void> removeFavoriteBookReferences(@PathVariable UUID uuid){
+        favoritesService.removeFavoriteBookReferences(uuid);
+        return ResponseEntity.noContent().build();
     }
 
 }
