@@ -2,6 +2,7 @@ package com.bookhub.bookservice.handlers;
 
 import com.bookhub.bookservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.bookservice.exceptions.*;
+import com.bookhub.bookservice.exceptions.extensions.RemoteServiceException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -62,4 +63,8 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(errorResponse);
     }
 
+    @ExceptionHandler(RemoteServiceException.class)
+    public ResponseEntity<String> handleRemoteServiceException(RemoteServiceException e) {
+        return ResponseEntity.status(e.getStatusCode()).body(e.getBody());
+    }
 }
