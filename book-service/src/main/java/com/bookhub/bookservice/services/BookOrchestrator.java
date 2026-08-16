@@ -5,6 +5,7 @@ import com.bookhub.bookservice.models.Page;
 import org.springframework.http.MediaType;
 
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 public interface BookOrchestrator {
@@ -36,6 +37,8 @@ public interface BookOrchestrator {
     void starBook(UUID bookId);
 
     void removeStarFromBook(UUID bookId);
+
+    InputStream loadBooksArchiveStream(List<UUID> bookIds, UUID authorId);
 
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);

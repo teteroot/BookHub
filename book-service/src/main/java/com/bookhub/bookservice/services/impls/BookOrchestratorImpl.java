@@ -1,5 +1,6 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.dtos.entries.ArchiveEntry;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
@@ -15,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -31,6 +33,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     private final FileTempService fileTempService;
     private final ImageService imageService;
     private final ProfileProvisioningPort profileProvisioningPort;
+    private final ArchiveService archiveService;
 
     @Override
     public InputStream loadBookStream(UUID bookId, UUID authorId) {
@@ -68,26 +71,22 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         if (type.equals(commonType)){
             coverPath = updateCover(book.getId(), extension, coverStream, coverSize, type);
         }else {
-            List<Path> tempFiles = new ArrayList<>();
             try {
                 var tempFile = fileTempService.writeToTempFile("cover-",
                         extension,
                         os -> imageService.convertToCommonFormat(coverStream, os)
                 );
-                tempFiles.add(tempFile);
-                try(InputStream stream = fileTempService.openStream(tempFile)) {
+                long coverFileSize = fileTempService.sizeOf(tempFile);
+                try(InputStream stream = fileTempService.openStreamWithOption(tempFile, StandardOpenOption.DELETE_ON_CLOSE)) {
                     coverPath = updateCover(book.getId(),
                             extension,
                             stream,
-                            fileTempService.sizeOf(tempFile),
+                            coverFileSize,
                             commonType
                     );
                 }
             } catch (IOException e) {
                 throw new CoverSaveException();
-            }
-            finally {
-                fileTempService.deleteQuietly(tempFiles);
             }
         }
         if (oldCoverPath != null &&  !oldCoverPath.equals(coverPath)){
@@ -361,6 +360,18 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public void removeStarFromBook(UUID bookId) {
         bookManagementService.incrementBookStars(bookId,-1);
+    }
+
+    @Override
+    public InputStream loadBooksArchiveStream(List<UUID> bookIds, UUID authorId) {
+        var books = bookManagementService.loadPublishedBooksByIds(bookIds, authorId);
+        var booksToArchive = new ArrayList<ArchiveEntry>();
+        books.forEach(book -> booksToArchive.add(new ArchiveEntry(
+                "%s_%s.%s".formatted(book.getTitle(),book.getAuthorId().toString().substring(0,4),"pdf"),
+                () -> loadBookStream(book.getId(),authorId)
+        )));
+        var archive = archiveService.collectFilesToArchive(booksToArchive);
+        return fileTempService.openStreamWithOption(archive, StandardOpenOption.DELETE_ON_CLOSE);
     }
 
     private String cacheBookContent(UUID bookId){

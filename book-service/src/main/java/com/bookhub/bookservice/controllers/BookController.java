@@ -23,6 +23,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -50,6 +51,22 @@ public class BookController {
         var dto = bookMapper.toDto(book,countOfPages);
 
         return ResponseEntity.ok(dto);
+    }
+
+    @GetMapping("/download")
+    public ResponseEntity<StreamingResponseBody> downloadBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                              @RequestParam List<UUID> bookIds) {
+        UUID authorId = userDetails != null ? userDetails.getUserId() : null;
+        var booksStream = bookOrchestrator.loadBooksArchiveStream(bookIds,authorId);
+        StreamingResponseBody responseBody = outputStream -> {
+            try (booksStream) {
+                booksStream.transferTo(outputStream);
+            }
+        };
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/zip"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=books.zip")
+                .body(responseBody);
     }
 
     @GetMapping("/{uuid}/download")

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -115,6 +116,13 @@ public class BookManagementServiceImpl implements BookManagementService {
         if (bookRepository.incrementStars(bookId, weight) == 0){
             throw new BookNotFoundException();
         }
+    }
+
+    @Override
+    public List<Book> loadPublishedBooksByIds(List<UUID> bookIds, UUID authorId) {
+        var books = bookRepository.findAllByIdsAndStatusOrIdAndAuthorId(bookIds, BookStatus.PUBLISHED, authorId);
+        if (books.isEmpty()) throw new BookNotFoundException();
+        return books;
     }
 
 }

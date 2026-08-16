@@ -3,6 +3,7 @@ package com.bookhub.bookservice.services;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.models.Book;
 
+import java.util.List;
 import java.util.UUID;
 
 public interface BookManagementService {
@@ -28,4 +29,6 @@ public interface BookManagementService {
     boolean isExistAndPublishedBook(UUID bookId);
 
     void incrementBookStars(UUID bookId, int weight);
+
+    List<Book> loadPublishedBooksByIds(List<UUID> bookIds, UUID authorId);
 }

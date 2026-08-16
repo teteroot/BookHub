@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
+import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -41,6 +42,15 @@ class FileTempServiceImpl implements FileTempService {
     public InputStream openStream(Path path) {
         try {
             return Files.newInputStream(path);
+        } catch (IOException e) {
+            throw new ContentLoadException();
+        }
+    }
+
+    @Override
+    public InputStream openStreamWithOption(Path path, OpenOption... option) {
+        try {
+            return Files.newInputStream(path, option);
         } catch (IOException e) {
             throw new ContentLoadException();
         }
