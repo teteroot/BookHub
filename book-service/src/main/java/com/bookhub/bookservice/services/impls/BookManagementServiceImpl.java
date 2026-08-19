@@ -7,6 +7,8 @@ import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -123,6 +125,11 @@ public class BookManagementServiceImpl implements BookManagementService {
         var books = bookRepository.findAllByIdsAndStatusOrIdAndAuthorId(bookIds, BookStatus.PUBLISHED, authorId);
         if (books.isEmpty()) throw new BookNotFoundException();
         return books;
+    }
+
+    @Override
+    public Page<Book> loadBooksWithAuthorIdAndStatus(UUID authorId,BookStatus status, Integer page) {
+        return bookRepository.findAllByAuthorIdAndStatus(authorId,status, PageRequest.of(page, 10));
     }
 
 }

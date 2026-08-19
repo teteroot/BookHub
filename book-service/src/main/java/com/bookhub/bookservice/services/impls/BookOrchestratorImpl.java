@@ -374,6 +374,13 @@ public class BookOrchestratorImpl implements BookOrchestrator {
         return fileTempService.openStreamWithOption(archive, StandardOpenOption.DELETE_ON_CLOSE);
     }
 
+    @Override
+    public org.springframework.data.domain.Page<Book> loadBooks(Integer page, UUID authorId, UUID principalId) {
+        boolean isOwner = authorId != null && authorId.equals(principalId);
+        var status = isOwner ? null : BookStatus.PUBLISHED;
+        return bookManagementService.loadBooksWithAuthorIdAndStatus(authorId, status, page);
+    }
+
     private String cacheBookContent(UUID bookId){
         var pages = pageService.loadBookPagesSortedByPageNumber(bookId);
         if (pages.isEmpty()){

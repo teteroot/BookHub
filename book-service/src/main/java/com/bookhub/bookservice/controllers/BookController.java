@@ -11,6 +11,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
+import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -40,6 +41,16 @@ public class BookController {
     public ResponseEntity<Void> checkBookAvailability(@PathVariable UUID uuid){
         bookOrchestrator.checkBookAvailability(uuid);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping
+    public ResponseEntity<PagedModel<BookResponseDto>> getAllBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
+                                                             @RequestParam(required = false) UUID authorId,
+                                                             @RequestParam Integer page){
+        UUID id = userDetails != null ? userDetails.getUserId() : null;
+        var books = bookOrchestrator.loadBooks(page, authorId, id);
+        var dto = books.map((b) -> bookMapper.toDto(b,bookOrchestrator.getCountOfPages(b.getId())));
+        return ResponseEntity.ok(new PagedModel<>(dto));
     }
 
     @GetMapping("/{uuid}")

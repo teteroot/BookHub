@@ -2,6 +2,7 @@ package com.bookhub.bookservice.services;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.models.Book;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,4 +32,6 @@ public interface BookManagementService {
     void incrementBookStars(UUID bookId, int weight);
 
     List<Book> loadPublishedBooksByIds(List<UUID> bookIds, UUID authorId);
+
+    Page<Book> loadBooksWithAuthorIdAndStatus(UUID authorId,BookStatus status, Integer page);
 }
