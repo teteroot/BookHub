@@ -375,10 +375,10 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public org.springframework.data.domain.Page<Book> loadBooks(Integer page, UUID authorId, UUID principalId) {
+    public org.springframework.data.domain.Page<Book> loadBooks(Integer page, String searchQuery, UUID authorId, UUID principalId) {
         boolean isOwner = authorId != null && authorId.equals(principalId);
         var status = isOwner ? null : BookStatus.PUBLISHED;
-        return bookManagementService.loadBooksWithAuthorIdAndStatus(authorId, status, page);
+        return bookManagementService.searchBook(searchQuery, authorId, status, page);
     }
 
     private String cacheBookContent(UUID bookId){

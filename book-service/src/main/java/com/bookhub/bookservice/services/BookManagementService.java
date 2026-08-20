@@ -33,5 +33,5 @@ public interface BookManagementService {
 
     List<Book> loadPublishedBooksByIds(List<UUID> bookIds, UUID authorId);
 
-    Page<Book> loadBooksWithAuthorIdAndStatus(UUID authorId,BookStatus status, Integer page);
+    Page<Book> searchBook(String searchQuery,UUID authorId,BookStatus status, Integer page);
 }

@@ -46,9 +46,10 @@ public class BookController {
     @GetMapping
     public ResponseEntity<PagedModel<BookResponseDto>> getAllBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                              @RequestParam(required = false) UUID authorId,
+                                                             @RequestParam(required = false) String query,
                                                              @RequestParam Integer page){
         UUID id = userDetails != null ? userDetails.getUserId() : null;
-        var books = bookOrchestrator.loadBooks(page, authorId, id);
+        var books = bookOrchestrator.loadBooks(page, query, authorId, id);
         var dto = books.map((b) -> bookMapper.toDto(b,bookOrchestrator.getCountOfPages(b.getId())));
         return ResponseEntity.ok(new PagedModel<>(dto));
     }

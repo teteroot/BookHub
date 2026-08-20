@@ -37,8 +37,9 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
     @Query("""
            SELECT b
            FROM Book b
-           WHERE (:authorId IS NULL OR b.authorId = :authorId)
+           WHERE (:title IS NULL OR b.title ILIKE CONCAT('%', :title, '%'))
+           AND (:authorId IS NULL OR b.authorId = :authorId)
            AND (:status IS NULL OR b.status = :status)
            """)
-    Page<Book> findAllByAuthorIdAndStatus(UUID authorId, BookStatus status, Pageable pageable);
+    Page<Book> findAllByTitleAndAuthorIdAndStatus(String title, UUID authorId, BookStatus status, Pageable pageable);
 }

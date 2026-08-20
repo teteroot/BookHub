@@ -40,7 +40,7 @@ public interface BookOrchestrator {
 
     InputStream loadBooksArchiveStream(List<UUID> bookIds, UUID authorId);
 
-    org.springframework.data.domain.Page<Book> loadBooks(Integer page, UUID authorId, UUID principalId);
+    org.springframework.data.domain.Page<Book> loadBooks(Integer page,String searchQuery, UUID authorId, UUID principalId);
 
     record PageContent(InputStream stream, UUID pageId) {}
     PageContent loadPageStreamByBookIdAndPageNumber(UUID bookId,UUID readerId, Integer pageNumber);

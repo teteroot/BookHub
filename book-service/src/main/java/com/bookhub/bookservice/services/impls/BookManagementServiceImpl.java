@@ -128,8 +128,8 @@ public class BookManagementServiceImpl implements BookManagementService {
     }
 
     @Override
-    public Page<Book> loadBooksWithAuthorIdAndStatus(UUID authorId,BookStatus status, Integer page) {
-        return bookRepository.findAllByAuthorIdAndStatus(authorId,status, PageRequest.of(page, 10));
+    public Page<Book> searchBook(String searchQuery,UUID authorId,BookStatus status, Integer page) {
+        return bookRepository.findAllByTitleAndAuthorIdAndStatus(searchQuery,authorId,status, PageRequest.of(page, 10));
     }
 
 }
