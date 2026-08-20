@@ -1,5 +1,6 @@
 package com.bookhub.bookservice.services;
 
+import com.bookhub.bookservice.dtos.entries.BookPageCountEntry;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
 
@@ -9,6 +10,8 @@ import java.util.UUID;
 public interface PageService {
 
     Integer getCountOfPages(UUID bookId);
+
+    List<BookPageCountEntry> getCountOfPages(List<UUID> bookIds);
 
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
 

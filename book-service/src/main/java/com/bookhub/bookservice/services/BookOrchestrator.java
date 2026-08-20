@@ -6,6 +6,7 @@ import org.springframework.http.MediaType;
 
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public interface BookOrchestrator {
@@ -23,6 +24,8 @@ public interface BookOrchestrator {
     Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber);
 
     Integer getCountOfPages(UUID bookId);
+
+    Map<UUID,Integer> getAllCountOfPages(List<UUID> bookIds);
 
     void createBookPage(UUID bookId, UUID authorId, Integer pageNumber, InputStream content);
 

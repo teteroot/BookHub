@@ -3,6 +3,7 @@ package com.bookhub.bookservice.controllers;
 import com.bookhub.bookservice.dtos.requests.BookCreateRequestDto;
 import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.mappers.BookMapper;
+import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.security.GatewayUserDetails;
 import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.CoverValidator;
@@ -50,7 +51,8 @@ public class BookController {
                                                              @RequestParam Integer page){
         UUID id = userDetails != null ? userDetails.getUserId() : null;
         var books = bookOrchestrator.loadBooks(page, query, authorId, id);
-        var dto = books.map((b) -> bookMapper.toDto(b,bookOrchestrator.getCountOfPages(b.getId())));
+        var counts = bookOrchestrator.getAllCountOfPages(books.map(Book::getId).toList());
+        var dto = books.map((b) -> bookMapper.toDto(b,counts.getOrDefault(b.getId(), 0)));
         return ResponseEntity.ok(new PagedModel<>(dto));
     }
 

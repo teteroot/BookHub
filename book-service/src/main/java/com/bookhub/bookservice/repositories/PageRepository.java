@@ -1,5 +1,6 @@
 package com.bookhub.bookservice.repositories;
 
+import com.bookhub.bookservice.dtos.entries.BookPageCountEntry;
 import com.bookhub.bookservice.models.Page;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -14,6 +15,14 @@ import java.util.UUID;
 @Repository
 public interface PageRepository extends JpaRepository<Page, UUID> {
     Integer countByBook_Id(UUID bookId);
+
+    @Query("""
+            SELECT p.book.id as bookId, COUNT(p) as count
+            FROM Page p
+            WHERE p.book.id IN :bookIds
+            GROUP BY p.book.id
+            """)
+    List<BookPageCountEntry> countAllByBook_IdIn(List<UUID> bookIds);
 
     List<Page> findAllByBook_IdOrderByPageNumber(UUID bookId);
 

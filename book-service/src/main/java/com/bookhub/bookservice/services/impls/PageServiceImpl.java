@@ -1,5 +1,6 @@
 package com.bookhub.bookservice.services.impls;
 
+import com.bookhub.bookservice.dtos.entries.BookPageCountEntry;
 import com.bookhub.bookservice.exceptions.extensions.PageConcurrentModificationException;
 import com.bookhub.bookservice.exceptions.extensions.PageNotFoundException;
 import com.bookhub.bookservice.models.Book;
@@ -24,6 +25,11 @@ public class PageServiceImpl implements PageService {
     @Override
     public Integer getCountOfPages(UUID bookId) {
         return pageRepository.countByBook_Id(bookId);
+    }
+
+    @Override
+    public List<BookPageCountEntry> getCountOfPages(List<UUID> bookIds) {
+        return pageRepository.countAllByBook_IdIn(bookIds);
     }
 
     @Override

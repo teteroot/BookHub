@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.dtos.entries.ArchiveEntry;
+import com.bookhub.bookservice.dtos.entries.BookPageCountEntry;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
@@ -17,9 +18,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @RequiredArgsConstructor
@@ -269,6 +269,15 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     @Override
     public Integer getCountOfPages(UUID bookId) {
         return pageService.getCountOfPages(bookId);
+    }
+
+    @Override
+    public Map<UUID,Integer> getAllCountOfPages(List<UUID> bookIds) {
+        return pageService.getCountOfPages(bookIds).stream()
+                .collect(
+                        Collectors.toMap(BookPageCountEntry::bookId,
+                        b -> b.count().intValue())
+                );
     }
 
     @Override
