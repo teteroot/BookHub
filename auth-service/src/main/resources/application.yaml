@@ -5,6 +5,12 @@ spring:
     url: jdbc:postgresql://localhost:5432/Authentication
     username: root
     password: root
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
 security:
   jwt:
     lifetime: 3600000
