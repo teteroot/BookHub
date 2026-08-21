@@ -122,7 +122,7 @@ public class BookController {
         try(InputStream coverStream = cover.getInputStream()) {
             bookOrchestrator.updateBookCover(uuid,userDetails.getUserId(),coverStream,cover.getSize(), type);
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.accepted().build();
     }
 
     @PatchMapping("/{uuid}/publish")
@@ -130,7 +130,7 @@ public class BookController {
     public ResponseEntity<Void> publishBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                             @PathVariable UUID uuid){
         bookOrchestrator.publishBook(uuid, userDetails.getUserId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{uuid}/draft")
@@ -138,7 +138,7 @@ public class BookController {
     public ResponseEntity<Void> draftBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
         bookOrchestrator.draftBook(uuid, userDetails.getUserId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{uuid}/archive")
@@ -146,7 +146,7 @@ public class BookController {
     public ResponseEntity<Void> archiveBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
         bookOrchestrator.archiveBook(uuid, userDetails.getUserId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping
@@ -163,7 +163,7 @@ public class BookController {
     public ResponseEntity<Void> deleteBook(@PathVariable UUID uuid,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         bookOrchestrator.deleteBook(uuid,userDetails.getUserId());
-        return ResponseEntity.ok().build();
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping(value = "/{uuid}/content", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -175,7 +175,7 @@ public class BookController {
         try(InputStream content = pdf.getInputStream()) {
             bookOrchestrator.createBookContent(uuid,userDetails.getUserId(),content);
         }
-        return ResponseEntity.ok().build();
+        return ResponseEntity.accepted().build();
     }
 
     @PostMapping("/{uuid}/star")

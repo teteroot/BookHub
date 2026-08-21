@@ -37,6 +37,7 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.GET, "/api/v1/books").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/books/*/pages/*").fullyAuthenticated()
                         .requestMatchers(HttpMethod.DELETE, "/api/v1/books/*").fullyAuthenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/books/**").fullyAuthenticated()
