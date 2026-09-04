@@ -15,7 +15,7 @@ public class GatewayVerificationFilter implements GlobalFilter, Ordered {
     @Value("${security.gateway.secret}")
     private String secret;
 
-    private final String REQUEST_HEADER_NAME = "X-Gateway-Secret";
+    private static final String REQUEST_HEADER_NAME = "X-Gateway-Secret";
 
     @Override
     @NullMarked

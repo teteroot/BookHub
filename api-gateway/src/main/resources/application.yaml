@@ -30,6 +30,10 @@ spring:
                   - OPTIONS
                 allowedHeaders: "*"
                 allowCredentials: true
+rate-limiting:
+  bucket4j:
+    tokenCapacity: 3
+    duration: 20s
 security:
   jwt:
     key: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664

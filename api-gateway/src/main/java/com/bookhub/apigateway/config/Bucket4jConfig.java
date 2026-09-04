@@ -1,4 +1,4 @@
-package com.bookhub.authservice.config;
+package com.bookhub.apigateway.config;
 
 import io.github.bucket4j.Bandwidth;
 import io.github.bucket4j.Bucket;
@@ -7,6 +7,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.stereotype.Component;
 
 import java.time.Duration;
 
@@ -14,6 +15,7 @@ import java.time.Duration;
 @Configuration
 @ConfigurationProperties(prefix = "rate-limiting.bucket4j")
 @Setter
+@Component
 public class Bucket4jConfig {
 
     private Integer tokenCapacity;
