@@ -481,4 +481,25 @@ class BookControllerTest {
                 .andExpect(status().isUnsupportedMediaType())
                 .andExpect(jsonPath("$.message").value("Type image/png is not supported"));
     }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateNonDraftingBookCover() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        when(coverValidator.getCoverMediaType(any())).thenReturn(MediaType.IMAGE_PNG);
+        doThrow(new BookNotDraftingException())
+                .when(bookOrchestrator).updateBookCover(any(),any(),any(),anyLong(),any());
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Book status isn't \"Draft\""));
+    }
+
+
 }
