@@ -1,6 +1,5 @@
 package com.bookhub.authservice.controllers;
 
-import com.bookhub.authservice.config.Bucket4jConfig;
 import com.bookhub.authservice.config.SecurityConfig;
 import com.bookhub.authservice.dtos.requests.LoginRequestDto;
 import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
@@ -10,7 +9,6 @@ import com.bookhub.authservice.exceptions.extensions.RefreshTokenExpireException
 import com.bookhub.authservice.exceptions.extensions.RefreshTokenNotFoundException;
 import com.bookhub.authservice.models.RefreshToken;
 import com.bookhub.authservice.security.JwtCore;
-import com.bookhub.authservice.security.filters.ConsumeTokenFilter;
 import com.bookhub.authservice.security.filters.GatewayVerificationFilter;
 import com.bookhub.authservice.security.filters.TokenFilter;
 import com.bookhub.authservice.services.AuthService;
@@ -40,7 +38,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class, Bucket4jConfig.class, GatewayVerificationFilter.class, ConsumeTokenFilter.class})
+@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class, GatewayVerificationFilter.class})
 class AuthControllerTest {
 
     @MockitoBean
