@@ -45,7 +45,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
     @Modifying
     @Query(value = """
           INSERT
-          INTO person_favorites(marked_as_favorite_by_id,favorite_author_id)
+          INTO favorite_authors(marked_as_favorite_by_id,favorite_author_id)
           VALUES (:id,:authorId);
           """, nativeQuery = true)
     void addPersonToFavoriteAuthors(UUID id, UUID authorId);
@@ -53,7 +53,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
     @Modifying
     @Query(value = """
           DELETE
-          FROM person_favorites
+          FROM favorite_authors
           WHERE marked_as_favorite_by_id = :id
           AND favorite_author_id = :authorId;
           """, nativeQuery = true)
