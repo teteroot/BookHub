@@ -1,6 +1,7 @@
 package com.bookhub.profileservice.controllers;
 
 import com.bookhub.profileservice.config.SecurityConfig;
+import com.bookhub.profileservice.config.properties.SecurityOriginProperties;
 import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
 import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
@@ -39,6 +40,9 @@ class FavoritesControllerTest {
     @MockitoBean
     private FavoritesService favoritesService;
 
+    @MockitoBean
+    private SecurityOriginProperties securityOriginProperties;
+
     @Autowired
     private WebApplicationContext webApplicationContext;
     @Autowired
@@ -71,7 +75,7 @@ class FavoritesControllerTest {
     void testSuccessfulAddToFavorites() throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(post("/api/v1/persons/favorites/authors/{uuid}", uuid))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test

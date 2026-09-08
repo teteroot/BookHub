@@ -1,6 +1,7 @@
 package com.bookhub.profileservice.controllers;
 
 import com.bookhub.profileservice.config.SecurityConfig;
+import com.bookhub.profileservice.config.properties.SecurityOriginProperties;
 import com.bookhub.profileservice.dtos.requests.PersonCreateRequestDto;
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
@@ -44,6 +45,9 @@ class PersonControllerTest {
 
     @MockitoBean
     private PersonService personService;
+
+    @MockitoBean
+    private SecurityOriginProperties securityOriginProperties;
 
     @Autowired
     private WebApplicationContext webApplicationContext;

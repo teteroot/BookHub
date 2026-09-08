@@ -7,13 +7,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Instant;
 import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,22 +23,6 @@ public class PersonRepositoryTest {
     @Autowired
     private PersonRepository personRepository;
 
-    @SuppressWarnings("resource")
-    @Container
-    static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:18-alpine3.22")
-            .withDatabaseName("testdb")
-            .withUsername("testuser")
-            .withPassword("testpass");
-
-    @DynamicPropertySource
-    static void registerPgProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
-    }
-
-
     Person setUpPerson(){
         var uuid = UUID.randomUUID();
         Person person = Person.builder()
@@ -49,6 +30,9 @@ public class PersonRepositoryTest {
                 .firstName("Test")
                 .lastName("User")
                 .biography("Biography")
+                .dateOfBirth(Instant.now())
+                .role(UserRole.AUTHOR)
+                .dateOfRegistration(Instant.now())
                 .build();
         personRepository.save(person);
         return person;
