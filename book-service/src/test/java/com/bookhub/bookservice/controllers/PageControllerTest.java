@@ -1,6 +1,7 @@
 package com.bookhub.bookservice.controllers;
 
 import com.bookhub.bookservice.config.SecurityConfig;
+import com.bookhub.bookservice.config.properties.SecurityOriginProperties;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.security.TestUserDetailsService;
 import com.bookhub.bookservice.services.BookOrchestrator;
@@ -40,6 +41,9 @@ class PageControllerTest {
     @MockitoBean
     private PDFValidator pdfValidator;
 
+    @MockitoBean
+    private SecurityOriginProperties securityOriginProperties;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -54,6 +58,7 @@ class PageControllerTest {
 
     @BeforeEach
     void setUp() {
+        when(securityOriginProperties.getGatewaySecret()).thenReturn(gatewaySecret);
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .defaultRequest(get("/").header("X-Gateway-Secret", gatewaySecret))
                 .apply(springSecurity())
@@ -139,7 +144,7 @@ class PageControllerTest {
 
         mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,UUID.randomUUID())
                         .file(file))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
 

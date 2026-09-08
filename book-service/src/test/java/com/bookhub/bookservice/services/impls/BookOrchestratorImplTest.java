@@ -4,6 +4,7 @@ import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.models.Page;
+import com.bookhub.bookservice.ports.ProfileProvisioningPort;
 import com.bookhub.bookservice.services.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +39,8 @@ class BookOrchestratorImplTest {
     private FileTempService fileTempService;
     @Mock
     private ImageService imageService;
+    @Mock
+    private ProfileProvisioningPort profileProvisioningPort;
 
     @InjectMocks
     private BookOrchestratorImpl orchestrator;
