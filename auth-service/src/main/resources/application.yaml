@@ -25,3 +25,6 @@ server:
 services:
   profile-service:
     url: http://127.0.0.1:8001
+springdoc:
+  api-docs:
+    path: /auth/v3/api-docs

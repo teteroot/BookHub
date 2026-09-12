@@ -9,13 +9,19 @@ spring:
             - id: auth-service
               uri: http://localhost:1812
               predicates:
-                - Path=/api/v1/auth/**
+                - Path=/api/v1/auth/**, /auth/v3/api-docs/**
               filters:
                 - StripPrefix=0
             - id: profile-service
               uri: http://localhost:8001
               predicates:
-                - Path=/api/v1/persons/**
+                - Path=/api/v1/persons/**, /profile/v3/api-docs/**
+              filters:
+                - StripPrefix=0
+            - id: book-service
+              uri: http://localhost:8002
+              predicates:
+                - Path=/api/v1/books/**, /book/v3/api-docs/**
               filters:
                 - StripPrefix=0
           globalcors:
@@ -47,3 +53,12 @@ logging:
     org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: DEBUG
 server:
   port: 8888
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth service API
+        url: /auth/v3/api-docs
+      - name: Profile service API
+        url: /profile/v3/api-docs
+      - name: Book service API
+        url: /book/v3/api-docs

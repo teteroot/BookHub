@@ -6,13 +6,8 @@ spring:
     username: root
     password: root
   jpa:
-    show-sql: true
     hibernate:
       ddl-auto: validate
-    properties:
-      hibernate:
-        format_sql: true
-        use_sql_comments: true
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -22,7 +17,6 @@ spring:
       max-request-size: 50MB
   cloud:
     aws:
-
       s3:
         endpoint: http://localhost:9000
         path-style-access-enabled: true
@@ -55,10 +49,6 @@ security:
   origin:
     gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
     internal-secret: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
-logging:
-  level:
-    org:
-      hibernate:
-        orm:
-          jdbc:
-            bind: trace
+springdoc:
+  api-docs:
+    path: /book/v3/api-docs
