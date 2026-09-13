@@ -13,6 +13,7 @@ spring:
       ddl-auto: validate
 server:
   port: 8001
+  forward-headers-strategy: framework
 security:
   origin:
     gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
@@ -23,3 +24,5 @@ services:
 springdoc:
   api-docs:
     path: /profile/v3/api-docs
+  show-login-endpoint: true
+  model-and-view-allowed: true
