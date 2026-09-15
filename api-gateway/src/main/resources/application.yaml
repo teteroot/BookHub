@@ -32,6 +32,7 @@ spring:
                 allowedMethods:
                   - GET
                   - POST
+                  - PATCH
                   - PUT
                   - DELETE
                   - OPTIONS
@@ -43,16 +44,13 @@ rate-limiting:
     tokenCapacity: 3
     duration: 20s
 security:
-  jwt:
-    key: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
-  gateway:
-    secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-logging:
-  level:
-    org.springframework.web: DEBUG
-    org.springframework.web.servlet.DispatcherServlet: DEBUG
-    org.springframework.cloud.gateway: DEBUG
-    org.springframework.cloud.gateway.route.RouteDefinitionRouteLocator: DEBUG
+  jwt-key: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
+  gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+  secured-headers:
+    - X-Gateway-Secret
+    - X-Internal-Secret
+    - X-User-Id
+    - X-User-Role
 server:
   port: 8888
   forward-headers-strategy: framework

@@ -16,13 +16,18 @@ import reactor.core.publisher.Mono;
 @Component
 @RequiredArgsConstructor
 public class ForwardedHeadersGlobalFilter extends GlobalGatewayFilter implements GlobalFilter, Ordered {
+
+    private static final String FORWARDED_HOST_HEADER_NAME = "X-Forwarded-Host";
+    private static final String FORWARDED_PROTO_HEADER_NAME = "X-Forwarded-Proto";
+    private static final String FORWARDED_PORT_HEADER_NAME = "X-Forwarded-Port";
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         var request = exchange.getRequest();
         ServerHttpRequest mutatedRequest = request.mutate()
-                .header("X-Forwarded-Host", request.getURI().getHost())
-                .header("X-Forwarded-Proto", request.getURI().getScheme())
-                .header("X-Forwarded-Port", String.valueOf(request.getURI().getPort()))
+                .header(FORWARDED_HOST_HEADER_NAME, request.getURI().getHost())
+                .header(FORWARDED_PROTO_HEADER_NAME, request.getURI().getScheme())
+                .header(FORWARDED_PORT_HEADER_NAME, String.valueOf(request.getURI().getPort()))
                 .build();
         var mutatedExchange = exchange.mutate().request(mutatedRequest).build();
         return chain.filter(mutatedExchange);
