@@ -1,6 +1,6 @@
 package com.bookhub.apigateway.filters;
 
-import com.bookhub.apigateway.security.JwtParser;
+import com.bookhub.apigateway.security.JwtCore;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.security.SignatureException;
@@ -27,7 +27,7 @@ public class AuthenticationGlobalFilter extends GlobalGatewayFilter implements G
     private static final String REQUEST_HEADER_PREFIX = "Bearer ";
     private static final String USER_ID_HEADER_NAME = "X-User-Id";
     private static final String USER_ROLE_HEADER_NAME = "X-User-Role";
-    private final JwtParser jwtParser;
+    private final JwtCore jwtCore;
     private final ObjectMapper objectMapper;
 
     @Override
@@ -38,7 +38,7 @@ public class AuthenticationGlobalFilter extends GlobalGatewayFilter implements G
         if (token.isPresent() && token.get().startsWith(REQUEST_HEADER_PREFIX)) {
             var jwt = token.get().substring(REQUEST_HEADER_PREFIX.length());
             try {
-                var claims = jwtParser.claims(jwt);
+                var claims = jwtCore.claims(jwt);
                 String uuid = claims.get("uuid", String.class);
                 String role = claims.get("role", String.class);
                 var mutatedRequest = request.mutate().headers((headers) -> {

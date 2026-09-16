@@ -1,22 +1,25 @@
-package com.bookhub.apigateway.security;
+package com.bookhub.apigateway.config;
+
 
 import com.bookhub.apigateway.properties.SecurityOriginProperties;
-import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtParser;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
 import java.nio.charset.StandardCharsets;
 
-@Component
 @RequiredArgsConstructor
-public class JwtParser {
+@Configuration
+public class JwtConfig {
 
     private final SecurityOriginProperties securityOriginProperties;
 
-    public Claims claims(String jwt){
+    @Bean
+    public JwtParser jwtParser(){
         return Jwts.parser().verifyWith(Keys.hmacShaKeyFor(securityOriginProperties.getJwtKey().getBytes(StandardCharsets.UTF_8)))
-                .build().parseSignedClaims(jwt).getPayload();
+                .build();
     }
 }
