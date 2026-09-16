@@ -26,8 +26,9 @@ public class ConsumeTokenFilter extends GlobalGatewayFilter implements GlobalFil
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         var attr = exchange.getAttribute(ServerWebExchangeUtils.GATEWAY_ROUTE_ATTR);
         var routeId = attr != null ? ((Route)attr).getId() : "default-service";
-
-        if (!bucketManager.getBucket(routeId).tryConsume(1)){
+        var remoteAddress = exchange.getRequest().getRemoteAddress();
+        var remoteHost = remoteAddress != null ? remoteAddress.getAddress().getHostAddress() : "unknown";
+        if (!bucketManager.getBucket(routeId, remoteHost).tryConsume(1)){
             return onError(exchange,"Too many requests. Please try again later.", HttpStatus.TOO_MANY_REQUESTS, objectMapper);
         }
         return chain.filter(exchange);
@@ -35,6 +36,6 @@ public class ConsumeTokenFilter extends GlobalGatewayFilter implements GlobalFil
 
     @Override
     public int getOrder() {
-        return 0;
+        return -5;
     }
 }
