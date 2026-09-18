@@ -24,15 +24,13 @@ public class CustomHeaderRemovalFilter extends GlobalGatewayFilter implements Gl
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
 
-        var securedHeaders = new ArrayList<>(securityOriginProperties.getSecuredHeaders());
-
-        Map<String, List<String>> mutatedHeaders = new HashMap<>();
-        for (String headerName:  securedHeaders) {
-            mutatedHeaders.put(headerName, Collections.emptyList());
-        }
-
+        var securedHeaders = securityOriginProperties.getSecuredHeaders();
         var mutatedRequest = exchange.getRequest().mutate().headers(
-                (httpHeaders) -> httpHeaders.putAll(mutatedHeaders)
+                (httpHeaders) -> httpHeaders.forEach((name, header) -> {
+                    if (securedHeaders.contains(name)) {
+                        httpHeaders.remove(name);
+                    }
+                })
         ).build();
 
         return chain.filter(exchange.mutate().request(mutatedRequest).build());
