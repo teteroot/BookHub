@@ -47,7 +47,7 @@ security:
     - X-User-Role
 server:
   port: 8888
-  forward-headers-strategy: framework
+  forward-headers-strategy: none
 springdoc:
   swagger-ui:
     urls:
