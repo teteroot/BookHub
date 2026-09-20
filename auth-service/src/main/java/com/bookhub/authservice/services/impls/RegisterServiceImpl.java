@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -29,7 +30,7 @@ public class RegisterServiceImpl implements RegisterService {
         var user = User.builder()
                 .email(email)
                 .password(passwordEncoder.encode(password))
-                .role(role)
+                .role(Objects.requireNonNullElse(role, UserRole.READER))
                 .build();
         var savedUser = userRepository.save(user);
         return savedUser.getId();
