@@ -42,7 +42,7 @@ public class AuthenticationGlobalFilter extends GlobalGatewayFilter implements G
                 String uuid = claims.get("uuid", String.class);
                 String role = claims.get("role", String.class);
                 var mutatedRequest = request.mutate().headers((headers) -> {
-                    headers.put(REQUEST_HEADER_NAME, Collections.emptyList());
+                    headers.remove(REQUEST_HEADER_NAME);
                     headers.put(USER_ID_HEADER_NAME, Collections.singletonList(uuid));
                     headers.put(USER_ROLE_HEADER_NAME, Collections.singletonList(role));
                 }).build();
@@ -50,7 +50,7 @@ public class AuthenticationGlobalFilter extends GlobalGatewayFilter implements G
                 return chain.filter(mutatedExchange);
 
             } catch (ExpiredJwtException ignored) {
-                var mutatedRequest = request.mutate().headers((headers) -> headers.put(REQUEST_HEADER_NAME, Collections.emptyList())).build();
+                var mutatedRequest = request.mutate().headers((headers) -> headers.remove(REQUEST_HEADER_NAME)).build();
                 var mutatedExchange = exchange.mutate().request(mutatedRequest).build();
                 return chain.filter(mutatedExchange);
             } catch (SignatureException e){
