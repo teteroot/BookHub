@@ -47,11 +47,11 @@ public class PersonRepositoryTest {
     @Test
     void testFindByFirstNameAndLastNameOrLastNameAndLastName() {
         var person = setUpPerson();
-        var firstPage = personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(person.getFirstName(),person.getLastName(), PageRequest.of(0,1));
+        var firstPage = personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName(person.getFirstName(),person.getLastName(), PageRequest.of(0,1));
         assertEquals(1,firstPage.getTotalElements());
         assertEquals(person.getId(),firstPage.getContent().getFirst().getId());
 
-        var secondPage = personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(person.getLastName(),person.getFirstName(), PageRequest.of(0,1));
+        var secondPage = personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName(person.getLastName(),person.getFirstName(), PageRequest.of(0,1));
         assertEquals(1,secondPage.getTotalElements());
         assertEquals(person.getId(),secondPage.getContent().getFirst().getId());
     }

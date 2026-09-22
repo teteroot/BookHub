@@ -41,7 +41,7 @@ public class PersonServiceImpl implements PersonService {
     public Page<Person> searchPersons(String query, int page, int size) {
         String[] firstAndLastName = query.trim().split("\\s+",2);
         if (firstAndLastName.length == 2) {
-            return personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(
+            return personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName(
                     firstAndLastName[0], firstAndLastName[1], PageRequest.of(page, size)
             );
         }

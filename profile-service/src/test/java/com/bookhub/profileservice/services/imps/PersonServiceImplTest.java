@@ -56,7 +56,7 @@ class PersonServiceImplTest {
 
     @Test
     void testSearchPersonsByNameAndLastname() {
-        when(personRepository.findByFirstNameAndLastNameOrLastNameAndLastName("test","test", PageRequest.of(0,1)))
+        when(personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName("test","test", PageRequest.of(0,1)))
                 .thenReturn(Page.empty());
         assertEquals(Page.empty(),personService.searchPersons("test    test",0,1));
     }

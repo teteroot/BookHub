@@ -23,7 +23,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            WHERE (LOWER(p.firstName) LIKE LOWER(CONCAT(:firstName, "%")) AND LOWER(p.lastName) LIKE LOWER(CONCAT(:lastName, "%")) )
            OR (LOWER(p.lastName) LIKE LOWER(CONCAT(:firstName, "%")) AND (LOWER(p.firstName)) LIKE LOWER(CONCAT(:lastName, "%")))
            """)
-    Page<Person> findByFirstNameAndLastNameOrLastNameAndLastName(String firstName, String lastName, Pageable pageable);
+    Page<Person> findByFirstNameAndLastNameOrLastNameAndFirstName(String firstName, String lastName, Pageable pageable);
     @Query("""
            SELECT p
            FROM Person p
