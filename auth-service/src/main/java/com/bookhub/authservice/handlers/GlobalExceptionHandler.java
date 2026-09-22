@@ -36,7 +36,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(BadCredentialsException.class)
     public ResponseEntity<ErrorResponseDto> handleBadCredentialsException(){
-        return new ResponseEntity<>(new ErrorResponseDto("Incorrect password", Instant.now(),401),HttpStatus.UNAUTHORIZED);
+        return new ResponseEntity<>(new ErrorResponseDto("Invalid email or password", Instant.now(),401),HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
