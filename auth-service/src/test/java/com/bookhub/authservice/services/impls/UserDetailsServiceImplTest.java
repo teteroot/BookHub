@@ -1,6 +1,5 @@
 package com.bookhub.authservice.services.impls;
 
-import com.bookhub.authservice.exceptions.extensions.UserNotFoundException;
 import com.bookhub.authservice.models.User;
 import com.bookhub.authservice.repositories.UserRepository;
 import com.bookhub.authservice.security.UserDetailsImpl;
@@ -9,6 +8,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 
 import java.util.Optional;
 
@@ -39,6 +39,6 @@ class UserDetailsServiceImplTest {
     void testLoadUserByUsernameNotFound() {
         when(userRepository.findUserByEmail(anyString())).thenReturn(Optional.empty());
 
-        assertThrows(UserNotFoundException.class, () -> userDetailsService.loadUserByUsername("username"));
+        assertThrows(UsernameNotFoundException.class, () -> userDetailsService.loadUserByUsername("username"));
     }
 }

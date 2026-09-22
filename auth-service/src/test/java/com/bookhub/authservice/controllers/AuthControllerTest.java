@@ -2,6 +2,7 @@ package com.bookhub.authservice.controllers;
 
 import com.bookhub.authservice.config.SecurityConfig;
 import com.bookhub.authservice.dtos.requests.LoginRequestDto;
+import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
 import com.bookhub.authservice.enums.UserRole;
 import com.bookhub.authservice.exceptions.extensions.EmailIsAlreadyUsedException;
@@ -68,7 +69,7 @@ class AuthControllerTest {
 
     @Test
     void testRegisterWithIncorrectEmail() throws Exception {
-        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("t", "12345678", UserRole.AUTHOR, null);
+        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("t", "12345678", UserRole.AUTHOR, new PersonDataRequestDto());
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequestDTO)))
@@ -78,7 +79,7 @@ class AuthControllerTest {
 
     @Test
     void testRegisterWithIncorrectPassword() throws Exception {
-        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "1", UserRole.AUTHOR, null);
+        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "1", UserRole.AUTHOR, new PersonDataRequestDto());
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequestDTO)))
@@ -88,7 +89,7 @@ class AuthControllerTest {
 
     @Test
     void testRegisterWithAlreadyUsedEmail() throws Exception {
-        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "12345678", UserRole.AUTHOR, null);
+        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "12345678", UserRole.AUTHOR, new PersonDataRequestDto());
         doThrow(new EmailIsAlreadyUsedException(registerRequestDTO.getEmail()))
                 .when(authService).registerNewUser(eq("test@test.com"), any(), any(), any());
         mockMvc.perform(post("/api/v1/auth/register")
@@ -100,7 +101,7 @@ class AuthControllerTest {
 
     @Test
     void testSuccessfulRegister() throws Exception {
-        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "12345678", UserRole.AUTHOR, null);
+        RegisterRequestDto registerRequestDTO = new RegisterRequestDto("test@test.com", "12345678", UserRole.AUTHOR, new PersonDataRequestDto());
         mockMvc.perform(post("/api/v1/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(registerRequestDTO)))
@@ -116,7 +117,7 @@ class AuthControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(loginRequestDto)))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Incorrect password"));
+                .andExpect(jsonPath("$.message").value("Invalid email or password"));
 
     }
 
