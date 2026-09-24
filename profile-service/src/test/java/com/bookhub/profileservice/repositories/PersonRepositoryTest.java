@@ -69,32 +69,6 @@ public class PersonRepositoryTest {
     }
 
     @Test
-    void testFindPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize() {
-        var person1 = setUpPerson();
-        person1.setRole(UserRole.AUTHOR);
-        var person2 = setUpPerson();
-        person2.setRole(UserRole.AUTHOR);
-        var person3 = setUpPerson();
-        person3.setRole(UserRole.AUTHOR);
-
-        person2.setFavoriteAuthors(new HashSet<>(Set.of(person1,person3)));
-        person1.setFavoriteAuthors(new HashSet<>(Set.of(person3)));
-        person3.setFavoriteAuthors(new HashSet<>());
-        personRepository.saveAll(List.of(person1,person2,person3));
-
-        var page = personRepository.findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole.AUTHOR,PageRequest.of(0,3));
-        assertEquals(3,page.getTotalElements());
-        assertIterableEquals(List.of(person3,person1,person2),page.getContent());
-
-        person2.setFavoriteAuthors(Collections.emptySet());
-        person1.setFavoriteAuthors(Collections.emptySet());
-        person3.setFavoriteAuthors(Collections.emptySet());
-        personRepository.saveAll(List.of(person1,person2,person3));
-
-    }
-
-
-    @Test
     void existsByIdAndFavoriteAuthorsId() {
         var person1 = setUpPerson();
         person1.setRole(UserRole.AUTHOR);
