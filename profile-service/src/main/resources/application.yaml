@@ -14,6 +14,20 @@ spring:
 server:
   port: 8001
   forward-headers-strategy: framework
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookService:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
+          - com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException
 security:
   origin:
     gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
