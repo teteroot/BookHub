@@ -116,7 +116,7 @@ class FavoritesControllerTest {
     void testSuccessfulRemoveFromFavorites() throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(delete("/api/v1/persons/favorites/authors/{uuid}", uuid))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test

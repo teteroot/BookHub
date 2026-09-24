@@ -70,6 +70,6 @@ public class PersonController {
     public ResponseEntity<Void> updatePerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                @RequestBody @Valid PersonUpdateRequestDto personUpdateRequestDto){
         personService.updatePerson(userDetails.getUserId(),personUpdateRequestDto);
-        return new ResponseEntity<>(HttpStatus.OK);
+        return ResponseEntity.noContent().build();
     }
 }

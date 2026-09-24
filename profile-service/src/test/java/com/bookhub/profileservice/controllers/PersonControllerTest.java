@@ -160,7 +160,7 @@ class PersonControllerTest {
         mockMvc.perform(patch("/api/v1/persons/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test
