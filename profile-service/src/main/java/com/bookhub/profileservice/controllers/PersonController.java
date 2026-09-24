@@ -10,11 +10,13 @@ import com.bookhub.profileservice.services.PersonService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.web.PagedModel;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.UUID;
 
 @RequiredArgsConstructor
@@ -26,11 +28,18 @@ public class PersonController {
     private final PersonService personService;
 
     @PostMapping
+    @PreAuthorize("hasRole('INTERNAL')")
     public ResponseEntity<Void> createPerson(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                              @RequestBody @Valid PersonCreateRequestDto personCreateRequestDto){
         var person = personMapper.toPerson(personCreateRequestDto);
         personService.createPerson(userDetails.getUserId(),person);
-        return new ResponseEntity<>(HttpStatus.CREATED);
+
+        URI location = ServletUriComponentsBuilder
+                .fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(userDetails.getUserId())
+                .toUri();
+        return ResponseEntity.created(location).build();
     }
 
     @GetMapping("/me")
