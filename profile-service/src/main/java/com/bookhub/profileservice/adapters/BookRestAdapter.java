@@ -5,6 +5,7 @@ import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException;
 import com.bookhub.profileservice.exceptions.extensions.RemoteServiceException;
 import com.bookhub.profileservice.ports.BookProvisioningPort;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatusCode;
@@ -25,6 +26,7 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
     private String baseUrl;
 
     @Override
+    @CircuitBreaker(name = "bookService")
     public void verifyBookAvailability(String personId, String bookId) {
         try {
             restClient.get()
@@ -44,6 +46,7 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
     }
 
     @Override
+    @CircuitBreaker(name = "bookService")
     public void addStar(String personId, String bookId) {
         try {
             restClient.post()
@@ -63,6 +66,7 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
     }
 
     @Override
+    @CircuitBreaker(name = "bookService")
     public void removeStar(String personId, String bookId) {
         try {
             restClient.delete()
