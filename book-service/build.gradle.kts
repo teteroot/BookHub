@@ -28,6 +28,7 @@ dependencies {
 	implementation("org.mapstruct:mapstruct:1.6.3")
 	implementation("org.springframework.boot:spring-boot-starter-validation")
 	implementation(platform("io.awspring.cloud:spring-cloud-aws-dependencies:4.0.2"))
+	implementation("io.github.resilience4j:resilience4j-spring-boot3:2.2.0")
 	implementation("io.awspring.cloud:spring-cloud-aws-starter-s3")
 	implementation("org.apache.pdfbox:pdfbox:3.0.5")
 	implementation("org.apache.tika:tika-core:3.3.1")

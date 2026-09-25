@@ -43,6 +43,34 @@ spring:
 server:
   port: 8002
   forward-headers-strategy: framework
+resilience4j:
+  circuitbreaker:
+    instances:
+      profileService:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - com.bookhub.bookservice.exceptions.extensions.RemoteServiceException
+          - com.bookhub.bookservice.exceptions.extensions.RemoteInternalServerErrorException
+  retry:
+    instances:
+      profileService:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        exponential-max-wait-duration: 2s
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exceptions:
+          - com.bookhub.bookservice.exceptions.extensions.RemoteInternalServerErrorException
+        ignore-exceptions:
+          - com.bookhub.bookservice.exceptions.extensions.RemoteServiceException
 services:
   profile-service:
     url: http://127.0.0.1:8001

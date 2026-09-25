@@ -6,9 +6,11 @@ import com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErro
 import com.bookhub.profileservice.exceptions.extensions.RemoteServiceException;
 import com.bookhub.profileservice.ports.BookProvisioningPort;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
+import io.github.resilience4j.retry.annotation.Retry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -28,6 +30,7 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
     private String baseUrl;
 
     @Override
+    @Retry(name = "bookService")
     @CircuitBreaker(name = "bookService")
     public void verifyBookAvailability(String personId, String bookId) {
         try {
@@ -42,12 +45,12 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                         throw new RemoteServiceException(new String(response.getBody().readNBytes(2048), StandardCharsets.UTF_8), response.getStatusCode());
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
-                        log.error("Internal Server Error", response.getBody().readAllBytes());
-                        throw new RemoteInternalServerErrorException();
+                        log.error("Internal Server Error while book availability check: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
+                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException();
+            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -66,16 +69,17 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                         throw new RemoteServiceException(new String(response.getBody().readNBytes(2048), StandardCharsets.UTF_8), response.getStatusCode());
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
-                        log.error("Internal Server Error", response.getBody().readAllBytes());
-                        throw new RemoteInternalServerErrorException();
+                        log.error("Internal Server Error while add star: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
+                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException();
+            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
     @Override
+    @Retry(name = "bookService")
     @CircuitBreaker(name = "bookService")
     public void removeStar(String personId, String bookId) {
         try {
@@ -90,12 +94,12 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                         throw new RemoteServiceException(new String(response.getBody().readNBytes(2048), StandardCharsets.UTF_8), response.getStatusCode());
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
-                        log.error("Internal Server Error", response.getBody().readAllBytes());
-                        throw new RemoteInternalServerErrorException();
+                        log.error("Internal Server Error while remove star: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
+                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException();
+            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 }

@@ -3,6 +3,7 @@ package com.bookhub.bookservice.handlers;
 import com.bookhub.bookservice.dtos.responses.ErrorResponseDto;
 import com.bookhub.bookservice.exceptions.*;
 import com.bookhub.bookservice.exceptions.extensions.RemoteServiceException;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -47,8 +48,14 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InternalServerErrorException.class)
     public ResponseEntity<ErrorResponseDto> handleInternalServerErrorException(InternalServerErrorException e) {
-        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 500);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), e.getInternalErrorStatus().value());
+        return ResponseEntity.status(e.getInternalErrorStatus()).body(errorResponse);
+    }
+
+    @ExceptionHandler(CallNotPermittedException.class)
+    public ResponseEntity<ErrorResponseDto> handleCallNotPermittedException(CallNotPermittedException e) {
+        var errorResponse = new ErrorResponseDto("Remote server is unavailable", Instant.now(), 503);
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(errorResponse);
     }
 
     @ExceptionHandler(ConflictException.class)

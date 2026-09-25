@@ -11,6 +11,7 @@ import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundExcepti
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
+import com.bookhub.profileservice.security.GatewayUserDetails;
 import com.bookhub.profileservice.security.TestUserDetailsService;
 import com.bookhub.profileservice.services.PersonService;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,6 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,6 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.any;
@@ -86,13 +90,17 @@ class PersonControllerTest {
     }
 
     @Test
-    @WithUserDetails
     void testSuccessfulCreatePerson() throws Exception {
         PersonCreateRequestDto dto = new PersonCreateRequestDto(
                 "name", "lastName",
                 Instant.now(),"",
                 UserRole.READER
         );
+        var auth = new UsernamePasswordAuthenticationToken(
+                new GatewayUserDetails(UUID.randomUUID(),UserRole.AUTHOR),
+                null,
+                List.of(() -> "ROLE_INTERNAL"));
+        SecurityContextHolder.getContext().setAuthentication(auth);
         when(personMapper.toPerson(dto)).thenReturn(new Person());
         mockMvc.perform(post("/api/v1/persons")
                         .contentType(MediaType.APPLICATION_JSON)
