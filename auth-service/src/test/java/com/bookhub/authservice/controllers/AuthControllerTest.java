@@ -1,6 +1,7 @@
 package com.bookhub.authservice.controllers;
 
 import com.bookhub.authservice.config.SecurityConfig;
+import com.bookhub.authservice.config.properties.SecurityOriginProperties;
 import com.bookhub.authservice.dtos.requests.LoginRequestDto;
 import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.dtos.requests.RegisterRequestDto;
@@ -39,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(AuthController.class)
-@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class, GatewayVerificationFilter.class})
+@Import({SecurityConfig.class, JwtCore.class, TokenFilter.class, GatewayVerificationFilter.class, SecurityOriginProperties.class})
 class AuthControllerTest {
 
     @MockitoBean

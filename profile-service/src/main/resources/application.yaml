@@ -28,6 +28,20 @@ resilience4j:
         recordExceptions:
           - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
           - com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException
+  retry:
+    instances:
+      bookService:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        exponential-max-wait-duration: 2s
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException
+        ignore-exceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
 security:
   origin:
     gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
