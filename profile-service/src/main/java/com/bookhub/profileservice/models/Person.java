@@ -33,6 +33,8 @@ public class Person {
     private Instant dateOfRegistration;
 
     private String biography;
+    @Builder.Default
+    private Integer countOfStars = 0;
 
     @Enumerated(value = EnumType.STRING)
     private UserRole role;

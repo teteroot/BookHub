@@ -37,7 +37,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            SELECT p
            FROM Person p
            WHERE p.role=:role
-           ORDER BY RANDOM() DESC
+           ORDER BY p.countOfStars DESC
            """)
     Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
                                                                       Pageable pageable);
@@ -61,4 +61,12 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
 
 
     Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
+
+    @Modifying
+    @Query("""
+            UPDATE Person p
+            SET p.countOfStars = p.countOfStars + :weight
+            WHERE p.id = :personId
+            """)
+    int incrementStars(UUID personId, int weight);
 }

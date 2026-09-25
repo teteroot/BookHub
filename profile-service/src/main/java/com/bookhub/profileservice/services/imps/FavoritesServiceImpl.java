@@ -44,6 +44,9 @@ public class FavoritesServiceImpl implements FavoritesService {
             throw new PersonAlreadyInFavoritesException();
         }
         personRepository.addPersonToFavoriteAuthors(userId, targetPersonId);
+        if (personRepository.incrementStars(targetPersonId, 1) == 0){
+            throw new PersonNotFoundException();
+        }
     }
 
     @Override
@@ -59,6 +62,9 @@ public class FavoritesServiceImpl implements FavoritesService {
             throw new PersonNotFoundException();
         }
         personRepository.removePersonFromPersonFavoritesAuthors(userId, targetPersonId);
+        if (personRepository.incrementStars(targetPersonId, -1) == 0){
+            throw new PersonNotFoundException();
+        }
     }
 
     @Override
