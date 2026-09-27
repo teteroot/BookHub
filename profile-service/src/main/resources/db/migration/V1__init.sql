@@ -22,7 +22,7 @@ CREATE TABLE favorite_books (
                         created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
                         CONSTRAINT uq_person_book UNIQUE (person_id, book_id)
 );
-CREATE INDEX idx_persons_count_of_stars ON persons (count_of_stars);
+CREATE INDEX idx_persons_count_of_stars ON persons (role, count_of_stars DESC);
 CREATE INDEX idx_persons_role ON persons (role);
 CREATE INDEX idx_persons_lower_name
     ON persons (LOWER(first_name), LOWER(last_name));
