@@ -2,7 +2,7 @@ package com.bookhub.profileservice.adapters;
 
 import com.bookhub.profileservice.config.properties.SecurityOriginProperties;
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException;
+import com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException;
 import com.bookhub.profileservice.exceptions.extensions.RemoteServiceException;
 import com.bookhub.profileservice.ports.BookProvisioningPort;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -46,11 +46,11 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
                         log.error("Internal Server Error while book availability check: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
-                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new RemoteServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
+            throw new RemoteServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -70,11 +70,11 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
                         log.error("Internal Server Error while add star: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
-                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new RemoteServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
+            throw new RemoteServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 
@@ -95,11 +95,11 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
                         log.error("Internal Server Error while remove star: {}", new String (response.getBody().readNBytes(2048), StandardCharsets.UTF_8));
-                        throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
+                        throw new RemoteServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
                     })
                     .toBodilessEntity();
         } catch (ResourceAccessException e) {
-            throw new RemoteInternalServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
+            throw new RemoteServerErrorException(HttpStatus.SERVICE_UNAVAILABLE);
         }
     }
 }

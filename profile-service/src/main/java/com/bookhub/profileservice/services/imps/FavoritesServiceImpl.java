@@ -89,7 +89,7 @@ public class FavoritesServiceImpl implements FavoritesService {
         favoriteBookRepository.save(favoriteBook);
         try {
             bookProvisioningPort.addStar(personId.toString(),bookId.toString());
-        } catch (RemoteInternalServerErrorException|RemoteServiceException e) {
+        } catch (RemoteServerErrorException | RemoteServiceException e) {
             favoriteBookRepository.delete(favoriteBook);
             throw e;
         }

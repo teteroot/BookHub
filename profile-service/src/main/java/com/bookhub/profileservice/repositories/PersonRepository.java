@@ -65,7 +65,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
     @Modifying
     @Query("""
             UPDATE Person p
-            SET p.countOfStars = p.countOfStars + :weight
+            SET p.countOfStars = GREATEST(0, p.countOfStars + :weight)
             WHERE p.id = :personId
             """)
     int incrementStars(UUID personId, int weight);

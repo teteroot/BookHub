@@ -26,8 +26,9 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
         recordExceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException
+        ignore-exceptions:
           - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
-          - com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException
   retry:
     instances:
       bookService:
@@ -39,7 +40,7 @@ resilience4j:
         enable-randomized-wait: true
         randomized-wait-factor: 0.5
         retry-exceptions:
-          - com.bookhub.profileservice.exceptions.extensions.RemoteInternalServerErrorException
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException
         ignore-exceptions:
           - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
 security:
