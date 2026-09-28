@@ -4,6 +4,7 @@ import com.bookhub.profileservice.config.SecurityConfig;
 import com.bookhub.profileservice.config.properties.SecurityOriginProperties;
 import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyInFavoritesException;
 import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException;
 import com.bookhub.profileservice.exceptions.extensions.SelfRequestException;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.security.TestUserDetailsService;
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.test.context.support.WithUserDetails;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -91,6 +93,17 @@ class FavoritesControllerTest {
 
     @Test
     @WithUserDetails
+    void testAddToFavoritesWhenExternalServerFallen() throws Exception {
+        UUID uuid = UUID.randomUUID();
+        doThrow(new RemoteServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR))
+                .when(favoritesService).addToFavoriteAuthors(testUserDetailsService.getUserId(),uuid);
+        mockMvc.perform(post("/api/v1/persons/favorites/authors/{uuid}", uuid))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Remote server error"));
+    }
+
+    @Test
+    @WithUserDetails
     void testAddToFavoritesNonExistPerson() throws Exception {
         UUID uuid = UUID.randomUUID();
         doThrow(new PersonNotFoundException())
@@ -116,7 +129,7 @@ class FavoritesControllerTest {
     void testSuccessfulRemoveFromFavorites() throws Exception {
         UUID uuid = UUID.randomUUID();
         mockMvc.perform(delete("/api/v1/persons/favorites/authors/{uuid}", uuid))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
     }
 
     @Test

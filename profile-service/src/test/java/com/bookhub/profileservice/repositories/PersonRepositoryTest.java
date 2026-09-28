@@ -11,7 +11,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Instant;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -47,11 +49,11 @@ public class PersonRepositoryTest {
     @Test
     void testFindByFirstNameAndLastNameOrLastNameAndLastName() {
         var person = setUpPerson();
-        var firstPage = personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(person.getFirstName(),person.getLastName(), PageRequest.of(0,1));
+        var firstPage = personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName(person.getFirstName(),person.getLastName(), PageRequest.of(0,1));
         assertEquals(1,firstPage.getTotalElements());
         assertEquals(person.getId(),firstPage.getContent().getFirst().getId());
 
-        var secondPage = personRepository.findByFirstNameAndLastNameOrLastNameAndLastName(person.getLastName(),person.getFirstName(), PageRequest.of(0,1));
+        var secondPage = personRepository.findByFirstNameAndLastNameOrLastNameAndFirstName(person.getLastName(),person.getFirstName(), PageRequest.of(0,1));
         assertEquals(1,secondPage.getTotalElements());
         assertEquals(person.getId(),secondPage.getContent().getFirst().getId());
     }
@@ -76,11 +78,9 @@ public class PersonRepositoryTest {
         person2.setRole(UserRole.AUTHOR);
         var person3 = setUpPerson();
         person3.setRole(UserRole.AUTHOR);
-
-        person2.setFavoriteAuthors(new HashSet<>(Set.of(person1,person3)));
-        person1.setFavoriteAuthors(new HashSet<>(Set.of(person3)));
-        person3.setFavoriteAuthors(new HashSet<>());
         personRepository.saveAll(List.of(person1,person2,person3));
+        personRepository.incrementStars(person3.getId(),2);
+        personRepository.incrementStars(person1.getId(),1);
 
         var page = personRepository.findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole.AUTHOR,PageRequest.of(0,3));
         assertEquals(3,page.getTotalElements());
@@ -92,7 +92,6 @@ public class PersonRepositoryTest {
         personRepository.saveAll(List.of(person1,person2,person3));
 
     }
-
 
     @Test
     void existsByIdAndFavoriteAuthorsId() {

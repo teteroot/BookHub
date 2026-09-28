@@ -23,7 +23,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            WHERE (LOWER(p.firstName) LIKE LOWER(CONCAT(:firstName, "%")) AND LOWER(p.lastName) LIKE LOWER(CONCAT(:lastName, "%")) )
            OR (LOWER(p.lastName) LIKE LOWER(CONCAT(:firstName, "%")) AND (LOWER(p.firstName)) LIKE LOWER(CONCAT(:lastName, "%")))
            """)
-    Page<Person> findByFirstNameAndLastNameOrLastNameAndLastName(String firstName, String lastName, Pageable pageable);
+    Page<Person> findByFirstNameAndLastNameOrLastNameAndFirstName(String firstName, String lastName, Pageable pageable);
     @Query("""
            SELECT p
            FROM Person p
@@ -37,12 +37,12 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
            SELECT p
            FROM Person p
            WHERE p.role=:role
-           ORDER BY SIZE(p.markedAsFavoriteBy) DESC
+           ORDER BY p.countOfStars DESC
            """)
     Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
                                                                       Pageable pageable);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
           INSERT
           INTO favorite_authors(marked_as_favorite_by_id,favorite_author_id)
@@ -50,7 +50,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
           """, nativeQuery = true)
     void addPersonToFavoriteAuthors(UUID id, UUID authorId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
           DELETE
           FROM favorite_authors
@@ -61,4 +61,12 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
 
 
     Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
+
+    @Modifying(clearAutomatically = true)
+    @Query("""
+            UPDATE Person p
+            SET p.countOfStars = GREATEST(0, p.countOfStars + :weight)
+            WHERE p.id = :personId
+            """)
+    int incrementStars(UUID personId, int weight);
 }

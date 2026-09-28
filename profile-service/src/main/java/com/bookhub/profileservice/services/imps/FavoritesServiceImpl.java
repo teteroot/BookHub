@@ -7,9 +7,11 @@ import com.bookhub.profileservice.ports.BookProvisioningPort;
 import com.bookhub.profileservice.repositories.FavoriteBookRepository;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.FavoritesService;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +24,7 @@ public class FavoritesServiceImpl implements FavoritesService {
     private final PersonRepository personRepository;
     private final BookProvisioningPort bookProvisioningPort;
     private final FavoriteBookRepository favoriteBookRepository;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     @Transactional
@@ -44,6 +47,9 @@ public class FavoritesServiceImpl implements FavoritesService {
             throw new PersonAlreadyInFavoritesException();
         }
         personRepository.addPersonToFavoriteAuthors(userId, targetPersonId);
+        if (personRepository.incrementStars(targetPersonId, 1) == 0){
+            throw new PersonNotFoundException();
+        }
     }
 
     @Override
@@ -59,6 +65,9 @@ public class FavoritesServiceImpl implements FavoritesService {
             throw new PersonNotFoundException();
         }
         personRepository.removePersonFromPersonFavoritesAuthors(userId, targetPersonId);
+        if (personRepository.incrementStars(targetPersonId, -1) == 0){
+            throw new PersonNotFoundException();
+        }
     }
 
     @Override
@@ -83,7 +92,7 @@ public class FavoritesServiceImpl implements FavoritesService {
         favoriteBookRepository.save(favoriteBook);
         try {
             bookProvisioningPort.addStar(personId.toString(),bookId.toString());
-        } catch (RemoteInternalServerErrorException|RemoteServiceException e) {
+        } catch (RemoteServerErrorException | RemoteServiceException| CallNotPermittedException e) {
             favoriteBookRepository.delete(favoriteBook);
             throw e;
         }
@@ -91,16 +100,31 @@ public class FavoritesServiceImpl implements FavoritesService {
 
     @Override
     public void removeFromFavoriteBooks(UUID personId, UUID bookId) {
-        if (!personRepository.existsById(personId)){
-            throw new PersonNotFoundException();
+        transactionTemplate.executeWithoutResult((s) -> {
+            if (!personRepository.existsById(personId)){
+                throw new PersonNotFoundException();
+            }
+            if (favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId) == 0){
+                throw new BookNotInFavoritesException();
+            }
+        });
+        try {
+            bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
+        } catch (RemoteServerErrorException | RemoteServiceException | CallNotPermittedException e) {
+            transactionTemplate.executeWithoutResult((s) -> {
+                var favoriteBook = FavoriteBook.builder()
+                        .bookId(bookId)
+                        .personId(personId)
+                        .build();
+                favoriteBookRepository.save(favoriteBook);
+            });
+            throw e;
         }
-        if (favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId) == 0){
-            throw new BookNotInFavoritesException();
-        }
-        bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
+
     }
 
     @Override
+    @Transactional
     public void removeFavoriteBookReferences(UUID bookId) {
         favoriteBookRepository.deleteAllByBookId(bookId);
     }

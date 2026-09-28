@@ -1,5 +1,6 @@
 package com.bookhub.authservice.adapters;
 
+import com.bookhub.authservice.config.properties.SecurityOriginProperties;
 import com.bookhub.authservice.dtos.requests.PersonDataRequestDto;
 import com.bookhub.authservice.ports.ProfileProvisioningPort;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 public class ProfileRestAdapter extends RestAdapter implements ProfileProvisioningPort {
 
     private final RestClient restClient;
+    private final SecurityOriginProperties securityOriginProperties;
     @Value("${services.profile-service.url}")
     private String baseUrl;
     @Override
@@ -28,7 +30,8 @@ public class ProfileRestAdapter extends RestAdapter implements ProfileProvisioni
         try {
             restClient.post()
                     .uri("%s/api/v1/persons".formatted(baseUrl))
-                    .header(GATEWAY_VERIFICATION_HEADER_NAME,GATEWAY_VERIFICATION_SECRET)
+                    .header(GATEWAY_VERIFICATION_HEADER_NAME,securityOriginProperties.getGatewaySecret())
+                    .header(INTERNAL_VERIFICATION_HEADER_NAME, securityOriginProperties.getInternalSecret())
                     .header(USER_ID_HEADER_NAME, id)
                     .header(USER_ROLE_HEADER_NAME, personData.getRole().name())
                     .contentType(MediaType.APPLICATION_JSON)
