@@ -92,7 +92,7 @@ public class FavoritesServiceImpl implements FavoritesService {
         favoriteBookRepository.save(favoriteBook);
         try {
             bookProvisioningPort.addStar(personId.toString(),bookId.toString());
-        } catch (RemoteServerErrorException | RemoteServiceException e) {
+        } catch (RemoteServerErrorException | RemoteServiceException| CallNotPermittedException e) {
             favoriteBookRepository.delete(favoriteBook);
             throw e;
         }
@@ -124,6 +124,7 @@ public class FavoritesServiceImpl implements FavoritesService {
     }
 
     @Override
+    @Transactional
     public void removeFavoriteBookReferences(UUID bookId) {
         favoriteBookRepository.deleteAllByBookId(bookId);
     }

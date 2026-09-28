@@ -79,7 +79,6 @@ public class BookRestAdapter extends RestAdapter implements BookProvisioningPort
     }
 
     @Override
-    @Retry(name = "bookService")
     @CircuitBreaker(name = "bookService")
     public void removeStar(String personId, String bookId) {
         try {
