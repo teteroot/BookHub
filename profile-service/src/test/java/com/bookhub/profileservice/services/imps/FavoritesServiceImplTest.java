@@ -56,6 +56,7 @@ class FavoritesServiceImplTest {
         var uuid2 = UUID.randomUUID();
         when(personRepository.existsById(uuid1)).thenReturn(true);
         when(personRepository.existsById(uuid2)).thenReturn(true);
+        when(personRepository.incrementStars(uuid2,1)).thenReturn(1);
         when(personRepository.existsByIdAndFavoriteAuthorsId(uuid1,uuid2))
                 .thenReturn(false);
         assertDoesNotThrow(() -> favoritesService.addToFavoriteAuthors(uuid1,uuid2));
@@ -93,6 +94,8 @@ class FavoritesServiceImplTest {
         when(personRepository.existsById(uuid2)).thenReturn(true);
         when(personRepository.existsByIdAndFavoriteAuthorsId(uuid1,uuid2))
                 .thenReturn(true);
+        when(personRepository.incrementStars(uuid2,-1)).thenReturn(1);
+
         assertDoesNotThrow(() -> favoritesService.removeFromFavoriteAuthors(uuid1,uuid2));
         verify(personRepository, times(1)).removePersonFromPersonFavoritesAuthors(uuid1,uuid2);
     }

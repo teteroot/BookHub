@@ -10,6 +10,7 @@ import com.bookhub.profileservice.services.FavoritesService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,6 +23,7 @@ public class FavoritesServiceImpl implements FavoritesService {
     private final PersonRepository personRepository;
     private final BookProvisioningPort bookProvisioningPort;
     private final FavoriteBookRepository favoriteBookRepository;
+    private final TransactionTemplate transactionTemplate;
 
     @Override
     @Transactional
@@ -97,13 +99,27 @@ public class FavoritesServiceImpl implements FavoritesService {
 
     @Override
     public void removeFromFavoriteBooks(UUID personId, UUID bookId) {
-        if (!personRepository.existsById(personId)){
-            throw new PersonNotFoundException();
+        transactionTemplate.executeWithoutResult((s) -> {
+            if (!personRepository.existsById(personId)){
+                throw new PersonNotFoundException();
+            }
+            if (favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId) == 0){
+                throw new BookNotInFavoritesException();
+            }
+        });
+        try {
+            bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
+        } catch (RemoteServerErrorException | RemoteServiceException e) {
+            transactionTemplate.executeWithoutResult((s) -> {
+                var favoriteBook = FavoriteBook.builder()
+                        .bookId(bookId)
+                        .personId(personId)
+                        .build();
+                favoriteBookRepository.save(favoriteBook);
+            });
+            throw e;
         }
-        if (favoriteBookRepository.deleteByPersonIdAndBookId(personId, bookId) == 0){
-            throw new BookNotInFavoritesException();
-        }
-        bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
+
     }
 
     @Override
