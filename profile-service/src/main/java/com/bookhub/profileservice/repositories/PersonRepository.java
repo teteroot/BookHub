@@ -42,7 +42,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
     Page<Person> findPersonByRoleGroupByMarkedAsFavoriteAuthorsIdSize(UserRole role,
                                                                       Pageable pageable);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
           INSERT
           INTO favorite_authors(marked_as_favorite_by_id,favorite_author_id)
@@ -50,7 +50,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
           """, nativeQuery = true)
     void addPersonToFavoriteAuthors(UUID id, UUID authorId);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query(value = """
           DELETE
           FROM favorite_authors
@@ -62,7 +62,7 @@ public interface PersonRepository extends CrudRepository<Person, UUID> {
 
     Boolean existsByIdAndFavoriteAuthorsId(UUID id, UUID favoriteAuthors_id);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Person p
             SET p.countOfStars = GREATEST(0, p.countOfStars + :weight)

@@ -23,6 +23,6 @@ CREATE TABLE favorite_books (
                         CONSTRAINT uq_person_book UNIQUE (person_id, book_id)
 );
 CREATE INDEX idx_persons_count_of_stars ON persons (role, count_of_stars DESC);
-CREATE INDEX idx_persons_role ON persons (role);
+CREATE INDEX idx_favorite_books_book_id ON favorite_books(book_id);
 CREATE INDEX idx_persons_lower_name
     ON persons (LOWER(first_name), LOWER(last_name));
