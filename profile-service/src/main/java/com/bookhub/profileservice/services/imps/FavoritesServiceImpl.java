@@ -7,6 +7,7 @@ import com.bookhub.profileservice.ports.BookProvisioningPort;
 import com.bookhub.profileservice.repositories.FavoriteBookRepository;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.FavoritesService;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -109,7 +110,7 @@ public class FavoritesServiceImpl implements FavoritesService {
         });
         try {
             bookProvisioningPort.removeStar(personId.toString(),bookId.toString());
-        } catch (RemoteServerErrorException | RemoteServiceException e) {
+        } catch (RemoteServerErrorException | RemoteServiceException | CallNotPermittedException e) {
             transactionTemplate.executeWithoutResult((s) -> {
                 var favoriteBook = FavoriteBook.builder()
                         .bookId(bookId)
