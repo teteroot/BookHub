@@ -40,7 +40,7 @@ public class ProfileRestAdapter extends RestAdapter implements ProfileProvisioni
                     .header(USER_ROLE_HEADER_NAME, UserRole.READER.name())
                     .retrieve()
                     .onStatus(HttpStatusCode::is4xxClientError, (request, response) -> {
-                        throw new RemoteServiceException(new String(response.getBody().readAllBytes(), StandardCharsets.UTF_8), response.getStatusCode());
+                        throw new RemoteServiceException(new String(response.getBody().readNBytes(2024), StandardCharsets.UTF_8), response.getStatusCode());
                     })
                     .onStatus(HttpStatusCode::is5xxServerError, (request, response) -> {
                         throw new RemoteInternalServerErrorException(HttpStatus.INTERNAL_SERVER_ERROR);
