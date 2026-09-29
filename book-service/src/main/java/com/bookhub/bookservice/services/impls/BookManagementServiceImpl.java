@@ -69,13 +69,6 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     @Transactional
-    public void removeAllPages(UUID bookId) {
-        var book = bookRepository.getReferenceById(bookId);
-        book.getPages().clear();
-    }
-
-    @Override
-    @Transactional
     public void updateBookStatus(UUID bookId, BookStatus bookStatus) {
         var book = bookRepository.getReferenceById(bookId);
         book.setStatus(bookStatus);

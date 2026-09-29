@@ -15,8 +15,6 @@ public interface BookManagementService {
 
     void createBook(Book book);
 
-    void removeAllPages(UUID bookId);
-
     void updateBookStatus(UUID bookId, BookStatus bookStatus);
 
     void updateBookContentPath(UUID bookId,String path);

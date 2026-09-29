@@ -66,4 +66,6 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
             AND p.pageNumber <= :to
            """)
     void shiftPagesLeft(@Param("bookId") UUID bookId, @Param("from") int from, @Param("to") int to);
+
+    void removeAllByBook_Id(UUID bookId);
 }
