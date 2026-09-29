@@ -36,12 +36,13 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = PersonController.class)
-@Import({SecurityConfig.class, TestUserDetailsService.class})
+@Import({SecurityConfig.class, TestUserDetailsService.class, SecurityOriginProperties.class})
 class PersonControllerTest {
 
     @MockitoBean
@@ -49,9 +50,6 @@ class PersonControllerTest {
 
     @MockitoBean
     private PersonService personService;
-
-    @MockitoBean
-    private SecurityOriginProperties securityOriginProperties;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -63,19 +61,21 @@ class PersonControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${security.origin.gateway.secret}")
+    @Value("${security.origin.gateway-secret}")
     private String gatewaySecret;
 
     @BeforeEach
     void setUp() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .defaultRequest(get("/").header("X-Gateway-Secret", gatewaySecret))
+                .apply(springSecurity())
                 .build();
     }
 
 
 
     @Test
+    @WithUserDetails
     void testCreateIncorrectPerson() throws Exception {
         PersonCreateRequestDto dto = new PersonCreateRequestDto(
                 "", "lastName",
