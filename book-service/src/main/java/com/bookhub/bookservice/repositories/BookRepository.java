@@ -18,7 +18,7 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
 
     boolean existsByIdAndStatus(UUID id, BookStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Book b
             SET b.countOfStars = b.countOfStars + :weight
