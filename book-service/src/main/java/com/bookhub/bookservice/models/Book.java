@@ -58,8 +58,9 @@ public class Book {
     @Column(name = "s3_cover_path", length = 512)
     private String s3CoverPath;
 
+    @Builder.Default
     @Column(name = "count_of_stars")
-    private Integer countOfStars;
+    private Integer countOfStars = 0;
 
     @OneToMany(
             mappedBy = "book",
