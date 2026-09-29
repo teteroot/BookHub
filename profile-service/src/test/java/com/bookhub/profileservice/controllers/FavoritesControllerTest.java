@@ -28,12 +28,13 @@ import java.util.UUID;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = FavoritesController.class)
-@Import({SecurityConfig.class, TestUserDetailsService.class})
+@Import({SecurityConfig.class, TestUserDetailsService.class, SecurityOriginProperties.class})
 class FavoritesControllerTest {
 
     @MockitoBean
@@ -41,9 +42,6 @@ class FavoritesControllerTest {
 
     @MockitoBean
     private FavoritesService favoritesService;
-
-    @MockitoBean
-    private SecurityOriginProperties securityOriginProperties;
 
     @Autowired
     private WebApplicationContext webApplicationContext;
@@ -53,13 +51,14 @@ class FavoritesControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-    @Value("${security.origin.gateway.secret}")
+    @Value("${security.origin.gateway-secret}")
     private String gatewaySecret;
 
     @BeforeEach
     void setUp() {
         this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
                 .defaultRequest(get("/").header("X-Gateway-Secret", gatewaySecret))
+                .apply(springSecurity())
                 .build();
     }
 
