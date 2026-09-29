@@ -17,6 +17,7 @@ CREATE TABLE books (
 CREATE INDEX idx_books_author_id ON books (author_id);
 CREATE INDEX idx_books_status ON books (status);
 CREATE UNIQUE INDEX uq_books_title_author ON books(title, author_id);
+CREATE INDEX idx_books_title on books using gin(to_tsvector('english', title));
 
 CREATE TABLE book_pages (
                             id UUID PRIMARY KEY,
