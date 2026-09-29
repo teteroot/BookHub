@@ -253,7 +253,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
 
     private void removeAllBookPages(UUID bookId) {
         try {
-            bookManagementService.removeAllPages(bookId);
+            pageService.removeBookPages(bookId);
         } catch (Exception ignored){}
         try {
             bookStorageService.removeBook(bookId);

@@ -1,9 +1,11 @@
 package com.bookhub.bookservice.services.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
-import com.bookhub.bookservice.exceptions.extensions.*;
+import com.bookhub.bookservice.exceptions.extensions.BookAccessDeniedException;
+import com.bookhub.bookservice.exceptions.extensions.BookAlreadyExistException;
+import com.bookhub.bookservice.exceptions.extensions.BookConcurrentModificationException;
+import com.bookhub.bookservice.exceptions.extensions.BookNotFoundException;
 import com.bookhub.bookservice.models.Book;
-import com.bookhub.bookservice.models.Page;
 import com.bookhub.bookservice.repositories.BookRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -14,8 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -168,42 +168,6 @@ class BookManagementServiceImplTest {
 
         assertThrows(BookConcurrentModificationException.class,
                 () -> bookManagementService.claimBookForUpdate(bookId, authorId));
-    }
-
-    @Test
-    void testRemoveAllPages_clearsPagesCollection() {
-        var bookId = UUID.randomUUID();
-        var book = Book.builder()
-                .id(bookId)
-                .pages(new ArrayList<>(List.of(Page.builder().id(UUID.randomUUID()).build())))
-                .build();
-        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
-
-        bookManagementService.removeAllPages(bookId);
-
-        assertTrue(book.getPages().isEmpty());
-    }
-
-    @Test
-    void testRemoveAllPages_alreadyEmpty_noException() {
-        var bookId = UUID.randomUUID();
-        var book = Book.builder()
-                .id(bookId)
-                .pages(new ArrayList<>())
-                .build();
-        when(bookRepository.getReferenceById(bookId)).thenReturn(book);
-
-        assertDoesNotThrow(() -> bookManagementService.removeAllPages(bookId));
-        assertTrue(book.getPages().isEmpty());
-    }
-
-    @Test
-    void testRemoveAllPages_bookNotFound_propagatesException() {
-        var bookId = UUID.randomUUID();
-        when(bookRepository.getReferenceById(bookId)).thenThrow(EntityNotFoundException.class);
-
-        assertThrows(EntityNotFoundException.class,
-                () -> bookManagementService.removeAllPages(bookId));
     }
 
     @Test

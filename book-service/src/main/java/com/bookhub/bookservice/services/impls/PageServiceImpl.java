@@ -132,5 +132,11 @@ public class PageServiceImpl implements PageService {
         pageRepository.save(page);
     }
 
+    @Override
+    @Transactional
+    public void removeBookPages(UUID bookId) {
+        pageRepository.removeAllByBook_Id(bookId);
+    }
+
 
 }
