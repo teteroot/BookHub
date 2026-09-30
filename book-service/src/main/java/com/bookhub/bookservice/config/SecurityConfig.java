@@ -39,8 +39,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers("/book/v3/api-docs/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/books/*/pages/*").fullyAuthenticated()
-                        .requestMatchers(HttpMethod.DELETE, "/api/v1/books/*").fullyAuthenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/books/*/pages").fullyAuthenticated()
+                        .requestMatchers(HttpMethod.DELETE, "/api/v1/books/**").fullyAuthenticated()
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/books/**").fullyAuthenticated()
                         .requestMatchers(HttpMethod.POST, "/api/v1/books/**", "/api/v1/books").fullyAuthenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/books/**").permitAll()
