@@ -2,7 +2,9 @@ package com.bookhub.bookservice.repositories;
 
 import com.bookhub.bookservice.dtos.entries.BookPageCountEntry;
 import com.bookhub.bookservice.models.Page;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -28,6 +30,7 @@ public interface PageRepository extends JpaRepository<Page, UUID> {
 
     Optional<Page> findByBook_IdAndPageNumber(UUID bookId, Integer pageNumber);
 
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Page> findPageByIdAndBook_Id(UUID id, UUID bookId);
 
     @Modifying(clearAutomatically = true)

@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -330,6 +331,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
+    @Transactional
     public void swapBookPages(UUID bookId, UUID authorId, UUID pageId, UUID swapPageId) {
         var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)){
@@ -342,6 +344,7 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
+    @Transactional
     public void moveBookPage(UUID bookId, UUID authorId, UUID pageId, Integer pageNumber) {
         var book = bookManagementService.claimBookForUpdate(bookId ,authorId);
         if (!book.getStatus().equals(BookStatus.DRAFT)){
