@@ -184,10 +184,11 @@ public class BookOrchestratorImpl implements BookOrchestrator {
     }
 
     @Override
-    public void createBook(Book book, UUID authorId) {
+    public UUID createBook(Book book, UUID authorId) {
         book.setAuthorId(authorId);
         book.setStatus(BookStatus.EMPTY);
         bookManagementService.createBook(book);
+        return book.getId();
     }
 
     @Override

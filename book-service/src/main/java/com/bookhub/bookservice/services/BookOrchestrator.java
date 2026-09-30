@@ -15,7 +15,7 @@ public interface BookOrchestrator {
 
     Book loadBookByUUID(UUID bookId,UUID authorId);
 
-    void createBook(Book book, UUID authorId);
+    UUID createBook(Book book, UUID authorId);
 
     void createBookContent(UUID bookId, UUID authorId, InputStream content);
 

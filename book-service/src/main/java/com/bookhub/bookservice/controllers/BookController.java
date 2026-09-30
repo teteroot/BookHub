@@ -14,7 +14,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +24,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -154,8 +154,8 @@ public class BookController {
     public ResponseEntity<Void> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         var book = bookMapper.toBook(bookCreateRequestDto);
-        bookOrchestrator.createBook(book,userDetails.getUserId());
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        var bookId = bookOrchestrator.createBook(book,userDetails.getUserId());
+        return ResponseEntity.created(URI.create("/books/" + bookId)).build();
     }
 
     @DeleteMapping("/{uuid}")
