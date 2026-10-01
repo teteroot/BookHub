@@ -1,7 +1,8 @@
 package com.bookhub.bookservice.controllers;
 
+import com.bookhub.bookservice.orchestrators.BookMediaOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookPageOrchestrator;
 import com.bookhub.bookservice.security.GatewayUserDetails;
-import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.InputStreamResource;
@@ -23,7 +24,8 @@ import java.util.UUID;
 @RequestMapping("/api/v1/books/{bookId}/pages")
 public class PageController {
 
-    private final BookOrchestrator bookOrchestrator;
+    private final BookPageOrchestrator bookPageOrchestrator;
+    private final BookMediaOrchestrator bookMediaOrchestrator;
     private final PDFValidator pdfValidator;
 
     @GetMapping("/{pageNumber}")
@@ -31,7 +33,7 @@ public class PageController {
                                                         @PathVariable UUID bookId,
                                                         @PathVariable Integer pageNumber){
         UUID readerId = userDetails != null ? userDetails.getUserId() : null;
-        var pageContent = bookOrchestrator.loadPageStreamByBookIdAndPageNumber(bookId, readerId, pageNumber);
+        var pageContent = bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(bookId, readerId, pageNumber);
         return ResponseEntity.ok()
                 .header("X-Page-Id", pageContent.pageId().toString())
                 .contentType(MediaType.APPLICATION_PDF)
@@ -47,7 +49,7 @@ public class PageController {
                                                        @RequestParam MultipartFile pdf) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookOrchestrator.updatePageContent(bookId, userDetails.getUserId() , pageId, content);
+            bookMediaOrchestrator.updatePageContent(bookId, userDetails.getUserId() , pageId, content);
         }
         return ResponseEntity.noContent().build();
 
@@ -61,7 +63,7 @@ public class PageController {
                                            @RequestParam MultipartFile pdf) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookOrchestrator.createBookPage(bookId, userDetails.getUserId() , pageNumber, content);
+            bookMediaOrchestrator.createBookPage(bookId, userDetails.getUserId() , pageNumber, content);
         }
         return ResponseEntity.status(HttpStatus.CREATED).build();
 
@@ -73,7 +75,7 @@ public class PageController {
                                           @PathVariable UUID bookId,
                                           @PathVariable UUID pageId,
                                           @RequestParam UUID swapPageId){
-        bookOrchestrator.swapBookPages(bookId, userDetails.getUserId(), pageId, swapPageId);
+        bookPageOrchestrator.swapBookPages(bookId, userDetails.getUserId(), pageId, swapPageId);
         return ResponseEntity.noContent().build();
 
     }
@@ -84,7 +86,7 @@ public class PageController {
                                           @PathVariable UUID bookId,
                                           @PathVariable UUID pageId,
                                           @RequestParam Integer pageNumber){
-        bookOrchestrator.moveBookPage(bookId, userDetails.getUserId(), pageId, pageNumber);
+        bookPageOrchestrator.moveBookPage(bookId, userDetails.getUserId(), pageId, pageNumber);
         return ResponseEntity.noContent().build();
 
     }
@@ -94,7 +96,7 @@ public class PageController {
     public ResponseEntity<Void> deletePage(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                            @PathVariable UUID bookId,
                                            @PathVariable UUID pageId){
-        bookOrchestrator.deleteBookPage(bookId, userDetails.getUserId(),pageId);
+        bookMediaOrchestrator.deleteBookPage(bookId, userDetails.getUserId(),pageId);
         return ResponseEntity.noContent().build();
 
     }
