@@ -1,4 +1,4 @@
-package com.bookhub.bookservice.services.impls;
+package com.bookhub.bookservice.orchestrators.impls;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.exceptions.extensions.*;
@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class BookOrchestratorImplTest {
+class BookMediaOrchestratorImplTest {
 
     @Mock
     private BookManagementService bookManagementService;
@@ -43,7 +43,7 @@ class BookOrchestratorImplTest {
     private ProfileProvisioningPort profileProvisioningPort;
 
     @InjectMocks
-    private BookOrchestratorImpl orchestrator;
+    private BookMediaOrchestratorImpl bookMediaOrchestrator;
 
     @Test
     void loadBookStream_deniesUnpublishedBookToNonAuthor() {
@@ -51,7 +51,7 @@ class BookOrchestratorImplTest {
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
 
         assertThrows(BookAccessDeniedException.class,
-                () -> orchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
+                () -> bookMediaOrchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
         verifyNoInteractions(bookStorageService, pageService, pdfService);
     }
 
@@ -63,7 +63,7 @@ class BookOrchestratorImplTest {
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
         when(bookStorageService.loadContent("archive")).thenReturn(expected);
 
-        assertSame(expected, orchestrator.loadBookStream(book.getId(), book.getAuthorId()));
+        assertSame(expected, bookMediaOrchestrator.loadBookStream(book.getId(), book.getAuthorId()));
         verify(bookStorageService).loadContent("archive");
         verifyNoInteractions(pdfService, fileTempService);
     }
@@ -83,7 +83,7 @@ class BookOrchestratorImplTest {
         when(bookStorageService.createBookContent(eq(book.getId()), any(), eq(12L))).thenReturn("archive");
         when(bookStorageService.loadContent("archive")).thenReturn(InputStream.nullInputStream());
 
-        orchestrator.loadBookStream(book.getId(), book.getAuthorId());
+        bookMediaOrchestrator.loadBookStream(book.getId(), book.getAuthorId());
 
         verify(bookManagementService).updateBookContentPath(book.getId(), "archive");
         verify(fileTempService).deleteQuietly(argThat(paths -> paths.contains(pageFile) && paths.contains(bookFile)));
@@ -96,7 +96,7 @@ class BookOrchestratorImplTest {
         when(pageService.loadBookPagesSortedByPageNumber(book.getId())).thenReturn(List.of());
 
         assertThrows(BookContentNotFoundException.class,
-                () -> orchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
+                () -> bookMediaOrchestrator.loadBookStream(book.getId(), UUID.randomUUID()));
     }
 
     @Test
@@ -109,7 +109,7 @@ class BookOrchestratorImplTest {
         when(pageService.loadPageByBookIdAndPageNumber(book.getId(), 2)).thenReturn(page);
         when(bookStorageService.loadContent("page")).thenReturn(expected);
 
-        var result = orchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 2);
+        var result = bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 2);
 
         assertSame(expected, result.stream());
         assertEquals(pageId, result.pageId());
@@ -121,40 +121,8 @@ class BookOrchestratorImplTest {
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
 
         assertThrows(BookAccessDeniedException.class,
-                () -> orchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 1));
+                () -> bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(book.getId(), UUID.randomUUID(), 1));
         verifyNoInteractions(pageService, bookStorageService);
-    }
-
-    @Test
-    void loadBookByUUID_allowsAuthorAndPublishedReader() {
-        var draft = book(BookStatus.DRAFT);
-        when(bookManagementService.loadBookByUUID(draft.getId())).thenReturn(draft);
-        assertSame(draft, orchestrator.loadBookByUUID(draft.getId(), draft.getAuthorId()));
-
-        var published = book(BookStatus.PUBLISHED);
-        when(bookManagementService.loadBookByUUID(published.getId())).thenReturn(published);
-        assertSame(published, orchestrator.loadBookByUUID(published.getId(), UUID.randomUUID()));
-    }
-
-    @Test
-    void loadBookByUUID_deniesUnpublishedBookToNonAuthor() {
-        var book = book(BookStatus.ARCHIVED);
-        when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
-
-        assertThrows(BookAccessDeniedException.class,
-                () -> orchestrator.loadBookByUUID(book.getId(), UUID.randomUUID()));
-    }
-
-    @Test
-    void createBook_setsAuthorAndEmptyStatus() {
-        var book = Book.builder().build();
-        var authorId = UUID.randomUUID();
-
-        orchestrator.createBook(book, authorId);
-
-        assertEquals(authorId, book.getAuthorId());
-        assertEquals(BookStatus.EMPTY, book.getStatus());
-        verify(bookManagementService).createBook(book);
     }
 
     @Test
@@ -170,7 +138,7 @@ class BookOrchestratorImplTest {
         when(pageService.addNewPageToBook(eq(book), anyInt())).thenReturn(UUID.randomUUID());
         when(bookStorageService.createPageContent(eq(book.getId()), any(), anyLong())).thenReturn("page-path");
 
-        orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
+        bookMediaOrchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
 
         var numbers = ArgumentCaptor.forClass(Integer.class);
         verify(pageService, times(2)).addNewPageToBook(eq(book), numbers.capture());
@@ -186,7 +154,7 @@ class BookOrchestratorImplTest {
         when(pageService.getCountOfPages(book.getId())).thenReturn(1);
         when(pdfService.loadPages(any())).thenReturn(List.of());
 
-        orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
+        bookMediaOrchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream());
 
         verify(pageService).removeBookPages(book.getId());
         verify(bookStorageService).removeBook(book.getId());
@@ -199,7 +167,7 @@ class BookOrchestratorImplTest {
         when(bookManagementService.claimBookForUpdate(book.getId(), book.getAuthorId())).thenReturn(book);
 
         assertThrows(BookContentAlreadyExistException.class,
-                () -> orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
+                () -> bookMediaOrchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
         verifyNoInteractions(pdfService, bookStorageService);
     }
 
@@ -217,7 +185,7 @@ class BookOrchestratorImplTest {
                 .thenThrow(new RuntimeException("storage failure"));
 
         assertThrows(ContentSaveException.class,
-                () -> orchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
+                () -> bookMediaOrchestrator.createBookContent(book.getId(), book.getAuthorId(), InputStream.nullInputStream()));
         verify(pageService).removeBookPages(book.getId());
         verify(bookStorageService).removeBook(book.getId());
         verify(bookManagementService, never()).updateBookStatus(any(), any());
@@ -234,7 +202,7 @@ class BookOrchestratorImplTest {
         when(fileTempService.openStream(file)).thenReturn(InputStream.nullInputStream());
         when(fileTempService.sizeOf(file)).thenReturn(7L);
 
-        orchestrator.updatePageContent(book.getId(), book.getAuthorId(), page.getId(), InputStream.nullInputStream());
+        bookMediaOrchestrator.updatePageContent(book.getId(), book.getAuthorId(), page.getId(), InputStream.nullInputStream());
 
         verify(bookManagementService).removeContentPath(book.getId());
         verify(bookStorageService).updatePageContent(eq("old-page"), any(), eq(7L));
@@ -249,7 +217,7 @@ class BookOrchestratorImplTest {
         when(pdfService.loadPages(any())).thenReturn(List.of(Path.of("1.pdf"), Path.of("2.pdf")));
 
         assertThrows(TooManyPagesException.class,
-                () -> orchestrator.updatePageContent(book.getId(), book.getAuthorId(), UUID.randomUUID(), InputStream.nullInputStream()));
+                () -> bookMediaOrchestrator.updatePageContent(book.getId(), book.getAuthorId(), UUID.randomUUID(), InputStream.nullInputStream()));
         verify(bookManagementService, never()).removeContentPath(any());
     }
 
@@ -264,7 +232,7 @@ class BookOrchestratorImplTest {
         when(fileTempService.sizeOf(file)).thenReturn(9L);
         when(bookStorageService.createPageContent(eq(book.getId()), any(), eq(9L))).thenReturn("new-page");
 
-        orchestrator.createBookPage(book.getId(), book.getAuthorId(), null, InputStream.nullInputStream());
+        bookMediaOrchestrator.createBookPage(book.getId(), book.getAuthorId(), null, InputStream.nullInputStream());
 
         verify(bookManagementService).removeContentPath(book.getId());
         verify(pageService).putNewPageToBook(book, "new-page", 4);
@@ -277,7 +245,7 @@ class BookOrchestratorImplTest {
         when(pdfService.loadPages(any())).thenReturn(List.of(Path.of("1.pdf"), Path.of("2.pdf")));
 
         assertThrows(TooManyPagesException.class,
-                () -> orchestrator.createBookPage(book.getId(), book.getAuthorId(), 1, InputStream.nullInputStream()));
+                () -> bookMediaOrchestrator.createBookPage(book.getId(), book.getAuthorId(), 1, InputStream.nullInputStream()));
         verify(bookStorageService, never()).createPageContent(any(), any(), anyLong());
     }
 
@@ -291,7 +259,7 @@ class BookOrchestratorImplTest {
         when(bookStorageService.createBookCover(eq(book.getId()), eq(".jpeg"), eq(type.toString()), any(), eq(5L)))
                 .thenReturn("new-cover");
 
-        orchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type);
+        bookMediaOrchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type);
 
         verify(bookManagementService).updateBookCoverPath(book.getId(), "new-cover");
         verify(bookStorageService).removeBookStorageContent("old-cover");
@@ -308,7 +276,7 @@ class BookOrchestratorImplTest {
                 .updateBookCoverPath(book.getId(), "new-cover");
 
         assertThrows(CoverSaveException.class,
-                () -> orchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type));
+                () -> bookMediaOrchestrator.updateBookCover(book.getId(), book.getAuthorId(), InputStream.nullInputStream(), 5L, type));
         verify(bookStorageService).removeBookStorageContent("new-cover");
     }
 
@@ -320,7 +288,7 @@ class BookOrchestratorImplTest {
         when(bookManagementService.loadBookByUUID(book.getId())).thenReturn(book);
         when(bookStorageService.loadContent("cover")).thenReturn(expected);
 
-        assertSame(expected, orchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID()));
+        assertSame(expected, bookMediaOrchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID()));
         verifyNoInteractions(pageService, pdfService, fileTempService);
     }
 
@@ -342,7 +310,7 @@ class BookOrchestratorImplTest {
         when(bookStorageService.loadContent("cover")).thenReturn(InputStream.nullInputStream());
         when(imageService.getPdfDpi()).thenReturn(150);
 
-        orchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID());
+        bookMediaOrchestrator.loadBookCoverStream(book.getId(), UUID.randomUUID());
 
         verify(bookManagementService).updateBookCoverPath(book.getId(), "cover");
         verify(fileTempService).deleteQuietly(List.of(pageFile, imageFile));
@@ -351,91 +319,9 @@ class BookOrchestratorImplTest {
     @Test
     void loadBookCoverContentType_delegatesToImageService() {
         when(imageService.getCommonCoverType()).thenReturn(MediaType.IMAGE_PNG);
-        assertEquals(MediaType.IMAGE_PNG, orchestrator.loadBookCoverContentType());
+        assertEquals(MediaType.IMAGE_PNG, bookMediaOrchestrator.loadBookCoverContentType());
     }
 
-    @Test
-    void publishBook_requiresDraftWithPagesAndPublishes() {
-        var book = book(BookStatus.DRAFT);
-        book.setS3ArchivePath("archive");
-        book.setS3CoverPath("cover");
-        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
-        when(pageService.getCountOfPages(book.getId())).thenReturn(2);
-
-        orchestrator.publishBook(book.getId(), book.getAuthorId());
-
-        verify(bookManagementService).updateBookStatus(book.getId(), BookStatus.PUBLISHED);
-    }
-
-    @Test
-    void publishBook_rejectsEmptyContent() {
-        var book = book(BookStatus.DRAFT);
-        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
-        when(pageService.getCountOfPages(book.getId())).thenReturn(0);
-
-        assertThrows(BookContentNotFoundException.class,
-                () -> orchestrator.publishBook(book.getId(), book.getAuthorId()));
-        verify(bookManagementService, never()).updateBookStatus(any(), any());
-    }
-
-    @Test
-    void publishBook_rejectsNonDraft() {
-        var book = book(BookStatus.PUBLISHED);
-        when(bookManagementService.loadAuthorBookByUUID(book.getId(), book.getAuthorId())).thenReturn(book);
-
-        assertThrows(BookNotDraftingException.class,
-                () -> orchestrator.publishBook(book.getId(), book.getAuthorId()));
-        verifyNoInteractions(pageService);
-    }
-
-    @Test
-    void draftBook_validatesStatusAndUpdates() {
-        var published = book(BookStatus.PUBLISHED);
-        when(bookManagementService.loadAuthorBookByUUID(published.getId(), published.getAuthorId())).thenReturn(published);
-        orchestrator.draftBook(published.getId(), published.getAuthorId());
-        verify(bookManagementService).updateBookStatus(published.getId(), BookStatus.DRAFT);
-
-        var draft = book(BookStatus.DRAFT);
-        when(bookManagementService.loadAuthorBookByUUID(draft.getId(), draft.getAuthorId())).thenReturn(draft);
-        assertThrows(BookAlreadyRequireStatusException.class,
-                () -> orchestrator.draftBook(draft.getId(), draft.getAuthorId()));
-    }
-
-    @Test
-    void archiveBook_rejectsEmptyAndArchivesPublishedBook() {
-        var published = book(BookStatus.PUBLISHED);
-        when(bookManagementService.loadAuthorBookByUUID(published.getId(), published.getAuthorId())).thenReturn(published);
-        orchestrator.archiveBook(published.getId(), published.getAuthorId());
-        verify(bookManagementService).updateBookStatus(published.getId(), BookStatus.ARCHIVED);
-
-        var empty = book(BookStatus.EMPTY);
-        when(bookManagementService.loadAuthorBookByUUID(empty.getId(), empty.getAuthorId())).thenReturn(empty);
-        assertThrows(BookContentNotFoundException.class,
-                () -> orchestrator.archiveBook(empty.getId(), empty.getAuthorId()));
-    }
-
-    @Test
-    void deleteBook_deletesDatabaseRecordAndStorage() {
-        var bookId = UUID.randomUUID();
-        var authorId = UUID.randomUUID();
-        when(bookManagementService.loadAuthorBookByUUID(bookId, authorId)).thenReturn(book(BookStatus.DRAFT));
-
-        orchestrator.deleteBook(bookId, authorId);
-
-        verify(bookManagementService).deleteBookByUUID(bookId);
-        verify(bookStorageService).removeBook(bookId);
-    }
-
-    @Test
-    void pageQueries_delegateToPageService() {
-        var bookId = UUID.randomUUID();
-        var page = Page.builder().id(UUID.randomUUID()).build();
-        when(pageService.loadPageByBookIdAndPageNumber(bookId, 4)).thenReturn(page);
-        when(pageService.getCountOfPages(bookId)).thenReturn(4);
-
-        assertSame(page, orchestrator.loadPageByBookIdAndPageNumber(bookId, 4));
-        assertEquals(4, orchestrator.getCountOfPages(bookId));
-    }
 
     private static Book book(BookStatus status) {
         return Book.builder().id(UUID.randomUUID()).authorId(UUID.randomUUID()).status(status).build();
