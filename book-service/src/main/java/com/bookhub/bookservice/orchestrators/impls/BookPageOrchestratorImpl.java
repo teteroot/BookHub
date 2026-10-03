@@ -46,8 +46,10 @@ public class BookPageOrchestratorImpl implements BookPageOrchestrator {
         if (!book.getStatus().equals(BookStatus.DRAFT)){
             throw new BookNotDraftingException();
         }
-        var page = pageService.claimPageForUpdate(pageId,bookId);
-        var swappedPage = pageService.claimPageForUpdate(swapPageId,bookId);
+        var first = pageId.compareTo(swapPageId) <= 0 ? pageId : swapPageId;
+        var second = pageId.equals(first) ? swapPageId : pageId;
+        var page = pageService.claimPageForUpdate(first,bookId);
+        var swappedPage = pageService.claimPageForUpdate(second,bookId);
         bookManagementService.removeContentPath(bookId);
         pageService.swapPages(page,swappedPage);
     }
