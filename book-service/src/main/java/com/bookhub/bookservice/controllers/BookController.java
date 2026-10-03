@@ -4,8 +4,11 @@ import com.bookhub.bookservice.dtos.requests.BookCreateRequestDto;
 import com.bookhub.bookservice.dtos.responses.BookResponseDto;
 import com.bookhub.bookservice.mappers.BookMapper;
 import com.bookhub.bookservice.models.Book;
+import com.bookhub.bookservice.orchestrators.BookLifecycleOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookMediaOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookPageOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookQueryOrchestrator;
 import com.bookhub.bookservice.security.GatewayUserDetails;
-import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.CoverValidator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import jakarta.validation.Valid;
@@ -14,7 +17,6 @@ import org.springframework.core.io.InputStreamResource;
 import org.springframework.core.io.Resource;
 import org.springframework.data.web.PagedModel;
 import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +27,7 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -34,13 +37,17 @@ import java.util.UUID;
 public class BookController {
 
     private final BookMapper bookMapper;
-    private final BookOrchestrator bookOrchestrator;
     private final CoverValidator coverValidator;
     private final PDFValidator pdfValidator;
 
+    private final BookLifecycleOrchestrator bookLifecycleOrchestrator;
+    private final BookMediaOrchestrator bookMediaOrchestrator;
+    private final BookQueryOrchestrator bookQueryOrchestrator;
+    private final BookPageOrchestrator bookPageOrchestrator;
+
     @GetMapping("/{uuid}/availability")
     public ResponseEntity<Void> checkBookAvailability(@PathVariable UUID uuid){
-        bookOrchestrator.checkBookAvailability(uuid);
+        bookQueryOrchestrator.checkBookAvailability(uuid);
         return ResponseEntity.noContent().build();
     }
 
@@ -50,8 +57,8 @@ public class BookController {
                                                              @RequestParam(required = false) String query,
                                                              @RequestParam Integer page){
         UUID id = userDetails != null ? userDetails.getUserId() : null;
-        var books = bookOrchestrator.loadBooks(page, query, authorId, id);
-        var counts = bookOrchestrator.getAllCountOfPages(books.map(Book::getId).toList());
+        var books = bookQueryOrchestrator.loadBooks(page, query, authorId, id);
+        var counts = bookPageOrchestrator.getAllCountOfPages(books.map(Book::getId).toList());
         var dto = books.map((b) -> bookMapper.toDto(b,counts.getOrDefault(b.getId(), 0)));
         return ResponseEntity.ok(new PagedModel<>(dto));
     }
@@ -60,8 +67,8 @@ public class BookController {
     public ResponseEntity<BookResponseDto> getBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                    @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var book = bookOrchestrator.loadBookByUUID(uuid,authorId);
-        var countOfPages = bookOrchestrator.getCountOfPages(uuid);
+        var book = bookQueryOrchestrator.loadBookByUUID(uuid,authorId);
+        var countOfPages = bookPageOrchestrator.getCountOfPages(uuid);
         var dto = bookMapper.toDto(book,countOfPages);
 
         return ResponseEntity.ok(dto);
@@ -71,7 +78,7 @@ public class BookController {
     public ResponseEntity<StreamingResponseBody> downloadBooks(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                               @RequestParam List<UUID> bookIds) {
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var booksStream = bookOrchestrator.loadBooksArchiveStream(bookIds,authorId);
+        var booksStream = bookMediaOrchestrator.loadBooksArchiveStream(bookIds,authorId);
         StreamingResponseBody responseBody = outputStream -> {
             try (booksStream) {
                 booksStream.transferTo(outputStream);
@@ -87,7 +94,7 @@ public class BookController {
     public ResponseEntity<StreamingResponseBody> downloadBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                  @PathVariable UUID uuid) {
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var bookStream = bookOrchestrator.loadBookStream(uuid,authorId);
+        var bookStream = bookMediaOrchestrator.loadBookStream(uuid,authorId);
         StreamingResponseBody responseBody = outputStream -> {
             try (bookStream) {
                 bookStream.transferTo(outputStream);
@@ -103,8 +110,8 @@ public class BookController {
     public ResponseEntity<Resource> getBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                  @PathVariable UUID uuid){
         UUID authorId = userDetails != null ? userDetails.getUserId() : null;
-        var bookCoverStream = bookOrchestrator.loadBookCoverStream(uuid, authorId);
-        var contentType = bookOrchestrator.loadBookCoverContentType();
+        var bookCoverStream = bookMediaOrchestrator.loadBookCoverStream(uuid, authorId);
+        var contentType = bookMediaOrchestrator.loadBookCoverContentType();
         return ResponseEntity.ok()
                 .contentType(contentType)
                 .body(new InputStreamResource(bookCoverStream));
@@ -120,7 +127,7 @@ public class BookController {
             coverValidator.validateCoverMedia(type,coverStream);
         }
         try(InputStream coverStream = cover.getInputStream()) {
-            bookOrchestrator.updateBookCover(uuid,userDetails.getUserId(),coverStream,cover.getSize(), type);
+            bookMediaOrchestrator.updateBookCover(uuid,userDetails.getUserId(),coverStream,cover.getSize(), type);
         }
         return ResponseEntity.accepted().build();
     }
@@ -129,7 +136,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> publishBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                             @PathVariable UUID uuid){
-        bookOrchestrator.publishBook(uuid, userDetails.getUserId());
+        bookLifecycleOrchestrator.publishBook(uuid, userDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -137,7 +144,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> draftBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
-        bookOrchestrator.draftBook(uuid, userDetails.getUserId());
+        bookLifecycleOrchestrator.draftBook(uuid, userDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -145,7 +152,7 @@ public class BookController {
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> archiveBook(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                           @PathVariable UUID uuid){
-        bookOrchestrator.archiveBook(uuid, userDetails.getUserId());
+        bookLifecycleOrchestrator.archiveBook(uuid, userDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -154,15 +161,15 @@ public class BookController {
     public ResponseEntity<Void> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         var book = bookMapper.toBook(bookCreateRequestDto);
-        bookOrchestrator.createBook(book,userDetails.getUserId());
-        return new ResponseEntity<>(HttpStatus.CREATED);
+        var bookId = bookLifecycleOrchestrator.createBook(book,userDetails.getUserId());
+        return ResponseEntity.created(URI.create("/books/" + bookId)).build();
     }
 
     @DeleteMapping("/{uuid}")
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> deleteBook(@PathVariable UUID uuid,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
-        bookOrchestrator.deleteBook(uuid,userDetails.getUserId());
+        bookLifecycleOrchestrator.deleteBook(uuid,userDetails.getUserId());
         return ResponseEntity.noContent().build();
     }
 
@@ -173,7 +180,7 @@ public class BookController {
                                                   @AuthenticationPrincipal GatewayUserDetails userDetails) throws IOException {
         pdfValidator.validateBookPDF(pdf);
         try(InputStream content = pdf.getInputStream()) {
-            bookOrchestrator.createBookContent(uuid,userDetails.getUserId(),content);
+            bookMediaOrchestrator.createBookContent(uuid,userDetails.getUserId(),content);
         }
         return ResponseEntity.accepted().build();
     }
@@ -181,14 +188,14 @@ public class BookController {
     @PostMapping("/{uuid}/star")
     @PreAuthorize("hasRole('INTERNAL')")
     public ResponseEntity<Void> starBook(@PathVariable UUID uuid) {
-        bookOrchestrator.starBook(uuid);
+        bookQueryOrchestrator.starBook(uuid);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{uuid}/star")
     @PreAuthorize("hasRole('INTERNAL')")
     public ResponseEntity<Void> removeStarFromBook(@PathVariable UUID uuid) {
-        bookOrchestrator.removeStarFromBook(uuid);
+        bookQueryOrchestrator.removeStarFromBook(uuid);
         return ResponseEntity.noContent().build();
     }
 

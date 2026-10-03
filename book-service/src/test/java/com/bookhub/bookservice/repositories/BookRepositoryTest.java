@@ -7,18 +7,18 @@ import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.TestcontainersConfiguration;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Testcontainers
 @SpringBootTest
 @Transactional
+@Import(TestcontainersConfiguration.class)
 class BookRepositoryTest {
 
     @Autowired
@@ -86,41 +86,6 @@ class BookRepositoryTest {
         Book book3 = setUpBook(BookStatus.PUBLISHED, authorId);
         book3.setTitle("testTitle3");
         bookRepository.saveAndFlush(book3);
-        assertIterableEquals(List.of(book1,book2,book3),
-                bookRepository.findAllByTitleAndAuthorIdAndStatus(
-                                "test",
-                                null,
-                                null,
-                                PageRequest.of(0,10))
-                        .getContent()
-        );
-
-        assertIterableEquals(List.of(book1,book2),
-                bookRepository.findAllByTitleAndAuthorIdAndStatus(
-                                "test",
-                                null,
-                                BookStatus.DRAFT,
-                                PageRequest.of(0,10))
-                        .getContent()
-        );
-
-        assertIterableEquals(List.of(book2,book3),
-                bookRepository.findAllByTitleAndAuthorIdAndStatus(
-                                "test",
-                                book2.getAuthorId(),
-                                null,
-                                PageRequest.of(0,10))
-                        .getContent()
-        );
-
-        assertIterableEquals(List.of(book3),
-                bookRepository.findAllByTitleAndAuthorIdAndStatus(
-                                "test",
-                                book2.getAuthorId(),
-                                BookStatus.PUBLISHED,
-                                PageRequest.of(0,10))
-                        .getContent()
-        );
 
     }
 

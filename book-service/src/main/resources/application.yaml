@@ -55,8 +55,9 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3
         automaticTransitionFromOpenToHalfOpenEnabled: true
         recordExceptions:
-          - com.bookhub.bookservice.exceptions.extensions.RemoteServiceException
           - com.bookhub.bookservice.exceptions.extensions.RemoteInternalServerErrorException
+        ignore-exceptions:
+          - com.bookhub.bookservice.exceptions.extensions.RemoteServiceException
   retry:
     instances:
       profileService:

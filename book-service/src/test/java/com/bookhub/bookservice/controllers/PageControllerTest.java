@@ -3,8 +3,9 @@ package com.bookhub.bookservice.controllers;
 import com.bookhub.bookservice.config.SecurityConfig;
 import com.bookhub.bookservice.config.properties.SecurityOriginProperties;
 import com.bookhub.bookservice.exceptions.extensions.*;
+import com.bookhub.bookservice.orchestrators.BookMediaOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookPageOrchestrator;
 import com.bookhub.bookservice.security.TestUserDetailsService;
-import com.bookhub.bookservice.services.BookOrchestrator;
 import com.bookhub.bookservice.validators.PDFValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PageControllerTest {
 
     @MockitoBean
-    private BookOrchestrator bookOrchestrator;
+    private BookPageOrchestrator bookPageOrchestrator;
+
+
+    @MockitoBean
+    private BookMediaOrchestrator bookMediaOrchestrator;
 
     @MockitoBean
     private PDFValidator pdfValidator;
@@ -53,7 +58,7 @@ class PageControllerTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
-    @Value("${security.origin.gateway.secret}")
+    @Value("${security.origin.gateway-secret}")
     private String gatewaySecret;
 
     @BeforeEach
@@ -68,8 +73,8 @@ class PageControllerTest {
     @Test
     void testDownloadBookPageWithoutPrincipal_publicBookAllowed() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, null,5))
-                .thenReturn(new BookOrchestrator.PageContent(InputStream.nullInputStream(), uuid));
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, null,5))
+                .thenReturn(new BookMediaOrchestrator.PageContent(InputStream.nullInputStream(), uuid));
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
@@ -79,8 +84,8 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadBookWithReaderPrincipal() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
-                .thenReturn(new BookOrchestrator.PageContent(InputStream.nullInputStream(), uuid));
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
+                .thenReturn(new BookMediaOrchestrator.PageContent(InputStream.nullInputStream(), uuid));
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_PDF));
@@ -91,7 +96,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadForbiddenDraftBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId() ,5))
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId() ,5))
                 .thenThrow(new BookAccessDeniedException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -103,7 +108,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadNonExistBook() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
                 .thenThrow(new BookNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -115,7 +120,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadNonExistBookPage() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId(),5))
                 .thenThrow(new PageNotFoundException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -127,7 +132,7 @@ class PageControllerTest {
     @WithUserDetails("READER")
     void testDownloadBookPageWithS3Error() throws Exception {
         var uuid = UUID.randomUUID();
-        when(bookOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId() ,5))
+        when(bookMediaOrchestrator.loadPageStreamByBookIdAndPageNumber(uuid, testUserDetailsService.getUserId() ,5))
                 .thenThrow(new ContentLoadException());
 
         mockMvc.perform(get("/api/v1/books/{uuid}/pages/{number}", uuid,5))
@@ -170,7 +175,7 @@ class PageControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
         doThrow(new BookAccessDeniedException())
-                .when(bookOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
+                .when(bookMediaOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
         mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,pageId)
                         .file(file))
                 .andExpect(status().isForbidden())
@@ -185,7 +190,7 @@ class PageControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
         doThrow(new BookNotDraftingException())
-                .when(bookOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
+                .when(bookMediaOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
         mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,pageId)
                         .file(file))
                 .andExpect(status().isBadRequest())
@@ -201,7 +206,7 @@ class PageControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
         doThrow(new TooManyPagesException(1))
-                .when(bookOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
+                .when(bookMediaOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
         mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,pageId)
                         .file(file))
                 .andExpect(status().isBadRequest())
@@ -216,7 +221,7 @@ class PageControllerTest {
         MockMultipartFile file = new MockMultipartFile(
                 "pdf", "page.pdf", MediaType.APPLICATION_PDF_VALUE, "pdf".getBytes());
         doThrow(new ContentSaveException())
-                .when(bookOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
+                .when(bookMediaOrchestrator).updatePageContent(eq(uuid), eq(testUserDetailsService.getUserId()), eq(pageId), any(InputStream.class));
         mockMvc.perform(multipart(HttpMethod.PATCH,"/api/v1/books/{uuid}/pages/{number}", uuid,pageId)
                         .file(file))
                 .andExpect(status().isInternalServerError())

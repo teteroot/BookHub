@@ -5,15 +5,18 @@ import com.bookhub.bookservice.exceptions.extensions.*;
 import com.bookhub.bookservice.models.Book;
 import com.bookhub.bookservice.repositories.BookRepository;
 import com.bookhub.bookservice.services.BookManagementService;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,13 +68,6 @@ public class BookManagementServiceImpl implements BookManagementService {
         } catch (DataIntegrityViolationException e) {
             throw new BookAlreadyExistException(book.getTitle());
         }
-    }
-
-    @Override
-    @Transactional
-    public void removeAllPages(UUID bookId) {
-        var book = bookRepository.getReferenceById(bookId);
-        book.getPages().clear();
     }
 
     @Override
@@ -129,7 +125,22 @@ public class BookManagementServiceImpl implements BookManagementService {
 
     @Override
     public Page<Book> searchBook(String searchQuery,UUID authorId,BookStatus status, Integer page) {
-        return bookRepository.findAllByTitleAndAuthorIdAndStatus(searchQuery,authorId,status, PageRequest.of(page, 10));
+        Specification<Book> spec = (root, query, cb) -> {
+            var predicates = new ArrayList<Predicate>();
+            if (searchQuery != null && !searchQuery.isBlank()){
+                predicates.add(cb.like(cb.lower(root.get("title")), "%" + searchQuery.toLowerCase() + "%"));
+            }
+
+            if (authorId != null) {
+                predicates.add(cb.equal(root.get("authorId"), authorId));
+            }
+
+            if (status != null) {
+                predicates.add(cb.equal(root.get("status"), status));
+            }
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+        return bookRepository.findAll(spec,PageRequest.of(page, 10));
     }
 
 }

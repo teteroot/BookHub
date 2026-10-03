@@ -23,16 +23,19 @@ public class PageServiceImpl implements PageService {
     private final PageRepository pageRepository;
 
     @Override
+    @Transactional
     public Integer getCountOfPages(UUID bookId) {
         return pageRepository.countByBook_Id(bookId);
     }
 
     @Override
+    @Transactional
     public List<BookPageCountEntry> getCountOfPages(List<UUID> bookIds) {
         return pageRepository.countAllByBook_IdIn(bookIds);
     }
 
     @Override
+    @Transactional
     public Page loadPageByBookIdAndPageNumber(UUID bookId, Integer pageNumber) {
         return pageRepository.findByBook_IdAndPageNumber(bookId, pageNumber).
                 orElseThrow(PageNotFoundException::new);
@@ -48,6 +51,7 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    @Transactional
     public UUID addNewPageToBook(Book book, int pageNumber) {
         var page = Page.builder()
                 .book(book)
@@ -64,6 +68,7 @@ public class PageServiceImpl implements PageService {
     }
 
     @Override
+    @Transactional
     public Page claimPageForUpdate(UUID pageId, UUID bookId) {
         var page = pageRepository.findPageByIdAndBook_Id(pageId, bookId)
                 .orElseThrow(PageNotFoundException::new);
@@ -130,6 +135,12 @@ public class PageServiceImpl implements PageService {
         }
         page.setPageNumber(pageNumber);
         pageRepository.save(page);
+    }
+
+    @Override
+    @Transactional
+    public void removeBookPages(UUID bookId) {
+        pageRepository.removeAllByBook_Id(bookId);
     }
 
 

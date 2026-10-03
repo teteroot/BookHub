@@ -7,10 +7,7 @@ import com.bookhub.bookservice.services.IOConsumer;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -18,8 +15,7 @@ import java.util.List;
 
 @Slf4j
 @Service
-public
-class FileTempServiceImpl implements FileTempService {
+public class FileTempServiceImpl implements FileTempService {
     @Override
     public Path writeToTempFile(String prefix, String suffix, IOConsumer<OutputStream> writer) {
         Path tempFile;
@@ -28,7 +24,7 @@ class FileTempServiceImpl implements FileTempService {
         } catch (IOException e) {
             throw new ContentLoadException();
         }
-        try (OutputStream os = new FileOutputStream(tempFile.toFile())) {
+        try (OutputStream os = new BufferedOutputStream(Files.newOutputStream(tempFile))) {
             writer.accept(os);
 
         } catch (Exception e) {

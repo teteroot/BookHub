@@ -2,9 +2,8 @@ package com.bookhub.bookservice.repositories;
 
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.models.Book;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -14,11 +13,11 @@ import java.util.List;
 import java.util.UUID;
 
 @Repository
-public interface BookRepository extends JpaRepository<Book, UUID> {
+public interface BookRepository extends JpaRepository<Book, UUID>, JpaSpecificationExecutor<Book> {
 
     boolean existsByIdAndStatus(UUID id, BookStatus status);
 
-    @Modifying
+    @Modifying(clearAutomatically = true)
     @Query("""
             UPDATE Book b
             SET b.countOfStars = b.countOfStars + :weight
@@ -34,12 +33,4 @@ public interface BookRepository extends JpaRepository<Book, UUID> {
         """)
     List<Book> findAllByIdsAndStatusOrIdAndAuthorId(@Param("ids") List<UUID> ids, @Param("status") BookStatus status, @Param("authorId") UUID authorId);
 
-    @Query("""
-           SELECT b
-           FROM Book b
-           WHERE (:title IS NULL OR b.title ILIKE CONCAT('%', :title, '%'))
-           AND (:authorId IS NULL OR b.authorId = :authorId)
-           AND (:status IS NULL OR b.status = :status)
-           """)
-    Page<Book> findAllByTitleAndAuthorIdAndStatus(String title, UUID authorId, BookStatus status, Pageable pageable);
 }

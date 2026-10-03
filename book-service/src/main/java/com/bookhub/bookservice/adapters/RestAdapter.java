@@ -1,10 +1,8 @@
 package com.bookhub.bookservice.adapters;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
 
 @RequiredArgsConstructor
-@Component
 public abstract class RestAdapter {
 
     protected final String GATEWAY_VERIFICATION_HEADER_NAME = "X-Gateway-Secret";
