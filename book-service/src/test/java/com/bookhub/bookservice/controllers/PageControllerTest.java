@@ -58,7 +58,7 @@ class PageControllerTest {
     @Autowired
     private WebApplicationContext webApplicationContext;
 
-    @Value("${security.origin.gateway.secret}")
+    @Value("${security.origin.gateway-secret}")
     private String gatewaySecret;
 
     @BeforeEach

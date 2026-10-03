@@ -80,7 +80,7 @@ class BookControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @Value("${security.origin.gateway.secret}")
+    @Value("${security.origin.gateway-secret}")
     private String gatewaySecret;
     @Autowired
     private TestUserDetailsService testUserDetailsService;
