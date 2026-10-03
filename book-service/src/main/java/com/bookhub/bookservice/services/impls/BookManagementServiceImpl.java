@@ -132,7 +132,7 @@ public class BookManagementServiceImpl implements BookManagementService {
             }
 
             if (authorId != null) {
-                predicates.add(cb.equal(root.get("author_id"), authorId));
+                predicates.add(cb.equal(root.get("authorId"), authorId));
             }
 
             if (status != null) {
