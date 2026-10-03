@@ -18,7 +18,7 @@ CREATE INDEX idx_books_author_id ON books (author_id);
 CREATE INDEX idx_books_status ON books (status);
 CREATE UNIQUE INDEX uq_books_title_author ON books(title, author_id);
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
-CREATE INDEX idx_books_title_trgm ON books USING gin (title gin_trgm_ops);
+CREATE INDEX idx_books_title_trgm ON books USING gin (lower(title) gin_trgm_ops);
 CREATE TABLE book_pages (
                             id UUID PRIMARY KEY,
                             book_id UUID NOT NULL,
