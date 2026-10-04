@@ -50,8 +50,8 @@ public class BookPageOrchestratorImpl implements BookPageOrchestrator {
         var second = pageId.equals(first) ? swapPageId : pageId;
         var page = pageService.claimPageForUpdate(first,bookId);
         var swappedPage = pageService.claimPageForUpdate(second,bookId);
-        bookManagementService.removeContentPath(bookId);
         pageService.swapPages(page,swappedPage);
+        bookManagementService.removeContentPath(bookId);
     }
 
     @Override
@@ -65,7 +65,7 @@ public class BookPageOrchestratorImpl implements BookPageOrchestrator {
             throw new InvalidPageNumberException();
         }
         var page = pageService.claimPageForUpdate(pageId,bookId);
-        bookManagementService.removeContentPath(bookId);
         pageService.movePageTo(page,bookId, pageNumber);
+        bookManagementService.removeContentPath(bookId);
     }
 }
