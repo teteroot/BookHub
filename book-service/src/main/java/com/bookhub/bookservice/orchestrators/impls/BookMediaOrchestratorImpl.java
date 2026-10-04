@@ -69,7 +69,7 @@ public class BookMediaOrchestratorImpl implements BookMediaOrchestrator {
     @Override
     public InputStream loadBookStream(UUID bookId, UUID authorId) {
         var book = bookManagementService.loadBookByUUID(bookId);
-        if (!book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
+        if (book.getStatus().equals(BookStatus.EMPTY) || !book.getStatus().equals(BookStatus.PUBLISHED) && !book.getAuthorId().equals(authorId)){
             throw new BookAccessDeniedException();
         }
         var path = book.getS3ArchivePath();
@@ -82,6 +82,9 @@ public class BookMediaOrchestratorImpl implements BookMediaOrchestrator {
     @Override
     public InputStream loadBooksArchiveStream(List<UUID> bookIds, UUID authorId) {
         var books = bookManagementService.loadPublishedBooksByIds(bookIds, authorId);
+        if (books.isEmpty()){
+            throw new BookArchiveEmptyException();
+        }
         var booksToArchive = new ArrayList<ArchiveEntry>();
         books.forEach(book -> booksToArchive.add(new ArchiveEntry(
                 "%s_%s.%s".formatted(book.getTitle(),book.getAuthorId().toString().substring(0,4),"pdf"),

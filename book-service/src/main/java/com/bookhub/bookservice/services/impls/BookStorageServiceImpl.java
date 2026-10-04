@@ -139,6 +139,10 @@ public class BookStorageServiceImpl implements BookStorageService {
 
         var path = "%s/".formatted(storageProperties.getDestination().formatted(bookId));
         var toDelete = s3Template.listObjects(storageProperties.getBucketName(),path);
+        if (toDelete.isEmpty()){
+            log.warn("List objects in S3 for path: {} is empty", path);
+            return;
+        }
         try {
             var dor = DeleteObjectsRequest.builder()
                     .bucket(storageProperties.getBucketName())
