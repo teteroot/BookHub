@@ -117,7 +117,7 @@ public class BookController {
                 .body(new InputStreamResource(bookCoverStream));
     }
 
-    @PatchMapping("/{uuid}/cover")
+    @PatchMapping(value = "/{uuid}/cover", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> updateBookCover(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                     @PathVariable UUID uuid,

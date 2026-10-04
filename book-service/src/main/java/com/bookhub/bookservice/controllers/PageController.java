@@ -41,7 +41,7 @@ public class PageController {
 
     }
 
-    @PatchMapping("/{pageId}")
+    @PatchMapping(value = "/{pageId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> updatePageByPageNumber(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                                        @PathVariable UUID bookId,
@@ -55,7 +55,7 @@ public class PageController {
 
     }
 
-    @PostMapping
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @PreAuthorize("hasRole('AUTHOR')")
     public ResponseEntity<Void> putNewPage(@AuthenticationPrincipal GatewayUserDetails userDetails,
                                            @PathVariable UUID bookId,
