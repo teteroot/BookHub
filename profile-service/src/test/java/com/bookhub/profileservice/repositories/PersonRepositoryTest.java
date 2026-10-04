@@ -1,11 +1,13 @@
 package com.bookhub.profileservice.repositories;
 
 
+import com.bookhub.profileservice.TestcontainersConfiguration;
 import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.models.Person;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -20,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Testcontainers
 @SpringBootTest
 @Transactional
+@Import({TestcontainersConfiguration.class})
 public class PersonRepositoryTest {
 
     @Autowired
