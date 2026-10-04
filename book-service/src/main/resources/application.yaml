@@ -82,3 +82,5 @@ security:
 springdoc:
   api-docs:
     path: /book/v3/api-docs
+  swagger-ui:
+    enabled: false

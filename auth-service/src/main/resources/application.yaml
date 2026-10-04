@@ -29,3 +29,5 @@ services:
 springdoc:
   api-docs:
     path: /auth/v3/api-docs
+  swagger-ui:
+    enabled: false

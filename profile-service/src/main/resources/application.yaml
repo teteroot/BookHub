@@ -57,5 +57,7 @@ services:
 springdoc:
   api-docs:
     path: /profile/v3/api-docs
+  swagger-ui:
+    enabled: false
   show-login-endpoint: true
   model-and-view-allowed: true
