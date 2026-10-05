@@ -1,0 +1,104 @@
+services:
+  api-gateway:
+    build:
+      context: ./api-gateway
+    ports:
+      - "8888:8888"
+    environment:
+      SECURITY_JWT-KEY: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
+      SECURITY_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+
+      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_0_URI: http://auth-service:1812
+      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_1_URI: http://profile-service:8001
+      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_2_URI: http://book-service:8002
+
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      profile-service:
+        condition: service_healthy
+      book-service:
+        condition: service_healthy
+  auth-service:
+    build:
+      context: ./auth-service
+    ports:
+      - "1812:1812"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-database:5432/Authentication
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+
+      SECURITY_JWT_LIFETIME: 3600000
+      SECURITY_JWT_KEY: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
+      SECURITY_REFRESH_LIFETIME: 2592000000
+      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
+
+      SERVICES_PROFILE-SERVICE: http://profile-service:8001
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:1812/actuator/health || exit 1" ]
+      #TODO FIX GATEWAY VERIFICATION
+      interval: 1s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      auth-database:
+        condition: service_healthy
+  profile-service:
+    build:
+      context: ./profile-service
+    ports:
+      - "8001:8001"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-database:5431/Profile
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
+      SERVICES_BOOK-SERVICE: http://book-service:8002
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8001/actuator/health || exit 1" ]
+
+      interval: 1s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      profile-database:
+        condition: service_healthy
+  book-service:
+    build:
+      context: ./book-service
+    ports:
+      - "8002:8002"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://book-database:5430/Book
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
+      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
+      SPRING_CLOUD_AWS_S3_ENDPOINT: http://book-s3-storage:9000
+      SPRING_CLOUD_STORAGE_BUCKET-NAME: pdf-bucket
+      SPRING_CLOUD_AWS_CREDENTIALS_ACCESS-KEY: ${S3_ACCESS_KEY:-minioadmin}
+      SPRING_CLOUD_AWS_CREDENTIALS_SECRET-KEY: ${S3_SECRET_KEY:-minioadmin}
+      SERVICES_PROFILE-SERVICE: http://profile-service:8001
+    healthcheck:
+      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8002/actuator/health || exit 1" ]
+
+      interval: 1s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+    depends_on:
+      book-database:
+        condition: service_healthy
+
+#  book-s3-storage:
+#
+volumes:
+  auth_data:
+  profile_data:
+  book_data:
+  book_content:
