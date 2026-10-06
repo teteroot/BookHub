@@ -46,6 +46,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(errorResponse);
     }
 
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponseDto> handleIllegalArgumentException(IllegalArgumentException e) {
+        var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), 400);
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errorResponse);
+    }
+
     @ExceptionHandler(InternalServerErrorException.class)
     public ResponseEntity<ErrorResponseDto> handleInternalServerErrorException(InternalServerErrorException e) {
         var errorResponse = new ErrorResponseDto(e.getMessage(), Instant.now(), e.getInternalErrorStatus().value());
