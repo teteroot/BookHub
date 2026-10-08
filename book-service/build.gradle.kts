@@ -38,6 +38,7 @@ dependencies {
 	implementation("com.github.jai-imageio:jai-imageio-jpeg2000:1.4.0")
 	implementation("org.apache.pdfbox:jbig2-imageio:3.0.4")
 	implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2")
+	implementation("org.springframework.boot:spring-boot-starter-actuator")
 	compileOnly("org.projectlombok:lombok")
 	runtimeOnly("org.postgresql:postgresql")
 	annotationProcessor("org.projectlombok:lombok")
