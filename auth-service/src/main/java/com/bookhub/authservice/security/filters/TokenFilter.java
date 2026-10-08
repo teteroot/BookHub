@@ -20,8 +20,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class TokenFilter extends OncePerRequestFilter {
 
-    private final String USER_ID_HEADER_NAME = "X-User-Id";
-    private final String USER_ROLE_HEADER_NAME = "X-User-Role";
+    private static final String USER_ID_HEADER_NAME = "X-User-Id";
+    private static final String USER_ROLE_HEADER_NAME = "X-User-Role";
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, @NonNull HttpServletResponse response, @NonNull FilterChain filterChain) throws ServletException, IOException {
