@@ -5,13 +5,8 @@ services:
     ports:
       - "8888:8888"
     environment:
-      SECURITY_JWT-KEY: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
-      SECURITY_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-
-      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_0_URI: http://auth-service:1812
-      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_1_URI: http://profile-service:8001
-      SPRING_CLOUD_GATEWAY_SERVER_WEBFLUX_ROUTES_2_URI: http://book-service:8002
-
+      SECURITY_JWT_KEY: ${SECURITY_JWT_KEY:?set SECURITY_JWT_KEY in .env}
+      SECURITY_GATEWAY_SECRET: ${SECURITY_GATEWAY_SECRET:?set SECURITY_GATEWAY_SECRET in .env}
     depends_on:
       auth-service:
         condition: service_healthy
@@ -19,84 +14,147 @@ services:
         condition: service_healthy
       book-service:
         condition: service_healthy
+
   auth-service:
     build:
       context: ./auth-service
     ports:
       - "1812:1812"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-database:5432/Authentication
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://auth-database:5432/${AUTH_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASSWORD:?set AUTH_DB_PASSWORD in .env}
 
-      SECURITY_JWT_LIFETIME: 3600000
-      SECURITY_JWT_KEY: c292656dc120ab4c995397dc8a145404084737f3b7b2ac11457345e84ea19664
-      SECURITY_REFRESH_LIFETIME: 2592000000
-      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
+      SECURITY_JWT_LIFETIME: ${SECURITY_JWT_LIFETIME:-3600000}
+      SECURITY_JWT_KEY: ${SECURITY_JWT_KEY:?set SECURITY_JWT_KEY in .env}
+      SECURITY_REFRESH_LIFETIME: ${SECURITY_REFRESH_LIFETIME:-2592000000}
+      SECURITY_ORIGIN_GATEWAY_SECRET: ${SECURITY_GATEWAY_SECRET:?set SECURITY_GATEWAY_SECRET in .env}
+      SECURITY_ORIGIN_INTERNAL_SECRET: ${SECURITY_INTERNAL_SECRET:?set SECURITY_INTERNAL_SECRET in .env}
 
-      SERVICES_PROFILE-SERVICE: http://profile-service:8001
+      SERVICES_PROFILE_SERVICE_URL: http://profile-service:8001
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:1812/actuator/health || exit 1" ]
-      #TODO FIX GATEWAY VERIFICATION
+      test: [ "CMD-SHELL", "wget --no-verbose --header=\"X-Gateway-Secret: $$SECURITY_ORIGIN_GATEWAY_SECRET\" --tries=1 --spider http://127.0.0.1:1812/actuator/health || exit 1" ]
       interval: 1s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 60s
     depends_on:
       auth-database:
         condition: service_healthy
+
   profile-service:
     build:
       context: ./profile-service
     ports:
       - "8001:8001"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-database:5431/Profile
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
-      SERVICES_BOOK-SERVICE: http://book-service:8002
+      SPRING_DATASOURCE_URL: jdbc:postgresql://profile-database:5432/${PROFILE_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${PROFILE_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${PROFILE_DB_PASSWORD:?set PROFILE_DB_PASSWORD in .env}
+      SECURITY_ORIGIN_GATEWAY_SECRET: ${SECURITY_GATEWAY_SECRET:?set SECURITY_GATEWAY_SECRET in .env}
+      SECURITY_ORIGIN_INTERNAL_SECRET: ${SECURITY_INTERNAL_SECRET:?set SECURITY_INTERNAL_SECRET in .env}
+      SERVICES_BOOK_SERVICE_URL: http://book-service:8002
+      SERVICES_AUTH_SERVICE_URL: http://auth-service:1812
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8001/actuator/health || exit 1" ]
-
+      test: [ "CMD-SHELL", "wget --no-verbose --header=\"X-Gateway-Secret: $$SECURITY_ORIGIN_GATEWAY_SECRET\" --tries=1 --spider http://127.0.0.1:8001/actuator/health || exit 1" ]
       interval: 1s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 60s
     depends_on:
       profile-database:
         condition: service_healthy
+
   book-service:
     build:
       context: ./book-service
     ports:
       - "8002:8002"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://book-database:5430/Book
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD}
-      SECURITY_ORIGIN_GATEWAY-SECRET: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-      SECURITY_ORIGIN_INTERNAL-SECRET: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
+      SPRING_DATASOURCE_URL: jdbc:postgresql://book-database:5432/${BOOK_DB_NAME}
+      SPRING_DATASOURCE_USERNAME: ${BOOK_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${BOOK_DB_PASSWORD:?set BOOK_DB_PASSWORD in .env}
+      SECURITY_ORIGIN_GATEWAY_SECRET: ${SECURITY_GATEWAY_SECRET:?set SECURITY_GATEWAY_SECRET in .env}
+      SECURITY_ORIGIN_INTERNAL_SECRET: ${SECURITY_INTERNAL_SECRET:?set SECURITY_INTERNAL_SECRET in .env}
       SPRING_CLOUD_AWS_S3_ENDPOINT: http://book-s3-storage:9000
-      SPRING_CLOUD_STORAGE_BUCKET-NAME: pdf-bucket
-      SPRING_CLOUD_AWS_CREDENTIALS_ACCESS-KEY: ${S3_ACCESS_KEY:-minioadmin}
-      SPRING_CLOUD_AWS_CREDENTIALS_SECRET-KEY: ${S3_SECRET_KEY:-minioadmin}
-      SERVICES_PROFILE-SERVICE: http://profile-service:8001
+      SPRING_CLOUD_STORAGE_BUCKET_NAME: ${S3_BUCKET_NAME}
+      SPRING_CLOUD_AWS_CREDENTIALS_ACCESS_KEY: ${MINIO_ROOT_USER}
+      SPRING_CLOUD_AWS_CREDENTIALS_SECRET_KEY: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+      SERVICES_PROFILE_SERVICE_URL: http://profile-service:8001
     healthcheck:
-      test: [ "CMD-SHELL", "wget --no-verbose --tries=1 --spider http://127.0.0.1:8002/actuator/health || exit 1" ]
-
+      test: [ "CMD-SHELL", "wget --no-verbose --header=\"X-Gateway-Secret: $$SECURITY_ORIGIN_GATEWAY_SECRET\" --tries=1 --spider http://127.0.0.1:8002/actuator/health || exit 1" ]
       interval: 1s
       timeout: 5s
       retries: 10
-      start_period: 20s
+      start_period: 60s
     depends_on:
       book-database:
         condition: service_healthy
+      book-s3-storage:
+        condition: service_healthy
 
-#  book-s3-storage:
-#
+  auth-database:
+    image: postgres:18-alpine3.22
+    environment:
+      POSTGRES_DB: ${AUTH_DB_NAME}
+      POSTGRES_USER: ${AUTH_DB_USER}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASSWORD:?set AUTH_DB_PASSWORD in .env}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - auth_data:/var/lib/postgresql
+    restart: unless-stopped
+
+  profile-database:
+    image: postgres:18-alpine3.22
+    environment:
+      POSTGRES_DB: ${PROFILE_DB_NAME}
+      POSTGRES_USER: ${PROFILE_DB_USER}
+      POSTGRES_PASSWORD: ${PROFILE_DB_PASSWORD:?set PROFILE_DB_PASSWORD in .env}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - profile_data:/var/lib/postgresql
+    restart: unless-stopped
+
+  book-database:
+    image: postgres:18-alpine3.22
+    environment:
+      POSTGRES_DB: ${BOOK_DB_NAME}
+      POSTGRES_USER: ${BOOK_DB_USER}
+      POSTGRES_PASSWORD: ${BOOK_DB_PASSWORD:?set BOOK_DB_PASSWORD in .env}
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - book_data:/var/lib/postgresql
+    restart: unless-stopped
+
+  book-s3-storage:
+    image: minio/minio:latest
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?set MINIO_ROOT_PASSWORD in .env}
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: [ "CMD-SHELL", "timeout 5s bash -c ':> /dev/tcp/127.0.0.1/9000' || exit 1" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - book_content:/data
+
 volumes:
   auth_data:
   profile_data:
