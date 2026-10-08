@@ -10,6 +10,10 @@ spring:
 server:
   port: 1812
   forward-headers-strategy: framework
+rest-client:
+  timeout:
+    connect-timeout: 3s
+    read-timeout: 5s
 springdoc:
   api-docs:
     path: /auth/v3/api-docs

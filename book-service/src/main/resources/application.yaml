@@ -35,6 +35,10 @@ spring:
 server:
   port: 8002
   forward-headers-strategy: framework
+rest-client:
+  timeout:
+    connect-timeout: 3s
+    read-timeout: 5s
 resilience4j:
   circuitbreaker:
     instances:
@@ -69,3 +73,5 @@ springdoc:
     path: /book/v3/api-docs
   swagger-ui:
     enabled: false
+  show-login-endpoint: true
+  model-and-view-allowed: true
