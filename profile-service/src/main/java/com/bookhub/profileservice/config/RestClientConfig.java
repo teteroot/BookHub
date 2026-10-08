@@ -4,8 +4,10 @@ import com.bookhub.profileservice.config.properties.RestClientTimeoutProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
+
+import java.net.http.HttpClient;
 
 @RequiredArgsConstructor
 @Configuration
@@ -15,11 +17,13 @@ public class RestClientConfig {
 
     @Bean
     public RestClient restClient(){
-        var simpleClient = new SimpleClientHttpRequestFactory();
-        simpleClient.setConnectTimeout(restClientTimeoutProperties.getConnectTimeout());
-        simpleClient.setReadTimeout(restClientTimeoutProperties.getReadTimeout());
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(restClientTimeoutProperties.getConnectTimeout())
+                .build();
+        var factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(restClientTimeoutProperties.getReadTimeout());
         return RestClient.builder()
-                .requestFactory(simpleClient)
+                .requestFactory(factory)
                 .build();
 
     }
