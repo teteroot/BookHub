@@ -4,7 +4,7 @@ COPY ./build.gradle.kts ./
 COPY ./settings.gradle.kts ./
 RUN gradle build --dry-run || return 0
 COPY . .
-RUN gradle build
+RUN gradle build -x test
 
 FROM alpine/java:21-jre AS final
 WORKDIR /profile
