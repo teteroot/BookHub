@@ -1,10 +1,6 @@
 spring:
   application:
     name: profile-service
-  datasource:
-    url: jdbc:postgresql://localhost:5431/Profile
-    username: root
-    password: root
   flyway:
     enabled: true
     baseline-on-migrate: true
@@ -47,13 +43,6 @@ resilience4j:
           - com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException
         ignore-exceptions:
           - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
-security:
-  origin:
-    gateway-secret: M9IzaWFV3lare8J2N8AVMtDVKlvsvwTZZBhEQ4GfGRtWlT7rsbo6oqsZSNuJCJM0uVGemKfbCwWGouRjqX9riVfELkUq5t69
-    internal-secret: 69ce7f22993b4b61bec02e672655449fa61d2217e8b64337b7e0f71a6d49aa40780ae30053c1484f9085cbc7986fd264
-services:
-  book-service:
-    url: http://127.0.0.1:8002
 springdoc:
   api-docs:
     path: /profile/v3/api-docs

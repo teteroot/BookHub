@@ -45,6 +45,7 @@ public class BookStorageServiceImpl implements BookStorageService {
                             .build()
             );
         } catch (RuntimeException e) {
+            log.error("Error saving content to S3", e);
             throw new ContentSaveException();
         }
         return path;

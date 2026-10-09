@@ -1,22 +1,29 @@
 package com.bookhub.bookservice.config;
 
+import com.bookhub.bookservice.config.properties.RestClientTimeoutProperties;
+import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
-import java.time.Duration;
+import java.net.http.HttpClient;
 
+@RequiredArgsConstructor
 @Configuration
 public class RestClientConfig {
 
+    private final RestClientTimeoutProperties restClientTimeoutProperties;
+
     @Bean
     public RestClient restClient(){
-        var simpleClient = new SimpleClientHttpRequestFactory();
-        simpleClient.setConnectTimeout(Duration.ofSeconds(3));
-        simpleClient.setReadTimeout(Duration.ofSeconds(5));
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(restClientTimeoutProperties.getConnectTimeout())
+                .build();
+        var factory = new JdkClientHttpRequestFactory(httpClient);
+        factory.setReadTimeout(restClientTimeoutProperties.getReadTimeout());
         return RestClient.builder()
-                .requestFactory(simpleClient)
+                .requestFactory(factory)
                 .build();
 
     }

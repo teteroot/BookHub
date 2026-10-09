@@ -27,7 +27,6 @@ import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBo
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URI;
 import java.util.List;
 import java.util.UUID;
 
@@ -158,11 +157,11 @@ public class BookController {
 
     @PostMapping
     @PreAuthorize("hasRole('AUTHOR')")
-    public ResponseEntity<Void> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
+    public ResponseEntity<UUID> createBook(@RequestBody @Valid BookCreateRequestDto bookCreateRequestDto,
                                            @AuthenticationPrincipal GatewayUserDetails userDetails) {
         var book = bookMapper.toBook(bookCreateRequestDto);
         var bookId = bookLifecycleOrchestrator.createBook(book,userDetails.getUserId());
-        return ResponseEntity.created(URI.create("/books/" + bookId)).build();
+        return ResponseEntity.ok(bookId);
     }
 
     @DeleteMapping("/{uuid}")

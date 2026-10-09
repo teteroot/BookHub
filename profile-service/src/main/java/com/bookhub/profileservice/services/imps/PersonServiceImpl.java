@@ -3,18 +3,19 @@ package com.bookhub.profileservice.services.imps;
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
 import com.bookhub.profileservice.enums.UserRole;
-import com.bookhub.profileservice.exceptions.extensions.BiographyNotFoundException;
-import com.bookhub.profileservice.exceptions.extensions.PersonAlreadyExistsException;
-import com.bookhub.profileservice.exceptions.extensions.PersonNotFoundException;
+import com.bookhub.profileservice.exceptions.extensions.*;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
+import com.bookhub.profileservice.ports.AuthProvisioningPort;
 import com.bookhub.profileservice.repositories.PersonRepository;
 import com.bookhub.profileservice.services.PersonService;
+import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -25,6 +26,8 @@ public class PersonServiceImpl implements PersonService {
 
     private final PersonRepository personRepository;
     private final PersonMapper personMapper;
+    private final TransactionTemplate transactionTemplate;
+    private final AuthProvisioningPort authProvisioningPort;
 
     @Override
     @Transactional
@@ -52,12 +55,27 @@ public class PersonServiceImpl implements PersonService {
     }
 
     @Override
-    @Transactional
     public void updatePerson(UUID id, PersonUpdateRequestDto updatedPerson) {
         var person = personRepository.findById(id)
                 .orElseThrow(PersonNotFoundException::new);
+        var userRole = person.getRole();
         personMapper.updatePerson(person, updatedPerson);
-        personRepository.save(person);
+        transactionTemplate.executeWithoutResult(
+                status -> personRepository.save(person)
+        );
+        if (userRole.equals(person.getRole())){
+            return;
+        }
+        try {
+            authProvisioningPort.updateUserRole(id.toString(),userRole.toString(), updatedPerson.getRole());
+        } catch (RemoteServerErrorException | RemoteServiceException | CallNotPermittedException e){
+            transactionTemplate.executeWithoutResult(status -> {
+                var rollbackPerson = personRepository.findById(id)
+                        .orElseThrow(PersonNotFoundException::new);
+                rollbackPerson.setRole(userRole);
+            });
+            throw e;
+        }
     }
 
 
