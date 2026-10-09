@@ -1,0 +1,41 @@
+package com.bookhub.authservice.models;
+
+import com.bookhub.authservice.enums.UserRole;
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.util.Objects;
+import java.util.UUID;
+
+@Entity
+@Table(name = "users")
+@Getter
+@Setter
+@Builder
+@AllArgsConstructor
+@NoArgsConstructor
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private UUID id;
+
+    private String email;
+
+    private String password;
+
+    @Enumerated(EnumType.STRING)
+    private UserRole role;
+
+    @Override
+    public boolean equals(Object o) {
+        if (o == null || getClass() != o.getClass()) return false;
+        User user = (User) o;
+        return Objects.equals(email, user.email);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(email);
+    }
+}

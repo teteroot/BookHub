@@ -1,0 +1,25 @@
+package com.bookhub.authservice.services.impls;
+
+import com.bookhub.authservice.repositories.UserRepository;
+import com.bookhub.authservice.security.UserDetailsImpl;
+import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.NullMarked;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.stereotype.Service;
+
+@Service
+@RequiredArgsConstructor
+public class UserDetailsServiceImpl implements UserDetailsService {
+
+    private final UserRepository userRepository;
+
+    @Override
+    @NullMarked
+    public UserDetails loadUserByUsername(String username) {
+        var user = userRepository.findUserByEmail(username)
+                        .orElseThrow(() -> new UsernameNotFoundException("User %s not found".formatted(username)));
+        return new UserDetailsImpl(user);
+    }
+}

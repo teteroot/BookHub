@@ -1,0 +1,518 @@
+package com.bookhub.bookservice.controllers;
+
+
+import com.bookhub.bookservice.config.SecurityConfig;
+import com.bookhub.bookservice.config.properties.SecurityOriginProperties;
+import com.bookhub.bookservice.dtos.requests.BookCreateRequestDto;
+import com.bookhub.bookservice.dtos.responses.BookResponseDto;
+import com.bookhub.bookservice.enums.BookStatus;
+import com.bookhub.bookservice.exceptions.extensions.*;
+import com.bookhub.bookservice.mappers.BookMapper;
+import com.bookhub.bookservice.models.Book;
+import com.bookhub.bookservice.orchestrators.BookLifecycleOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookMediaOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookPageOrchestrator;
+import com.bookhub.bookservice.orchestrators.BookQueryOrchestrator;
+import com.bookhub.bookservice.security.TestUserDetailsService;
+import com.bookhub.bookservice.validators.CoverValidator;
+import com.bookhub.bookservice.validators.PDFValidator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import tools.jackson.databind.ObjectMapper;
+
+import java.io.InputStream;
+import java.time.Instant;
+import java.util.UUID;
+
+import static org.mockito.Mockito.*;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
+@WebMvcTest(controllers = BookController.class)
+@Import({SecurityConfig.class, TestUserDetailsService.class})
+class BookControllerTest {
+
+    @MockitoBean
+    private BookMapper bookMapper;
+
+    @MockitoBean
+    private PDFValidator pdfValidator;
+
+    @MockitoBean
+    private SecurityOriginProperties securityOriginProperties;
+
+    @MockitoBean
+    private CoverValidator coverValidator;
+
+    @MockitoBean
+    private BookMediaOrchestrator bookMediaOrchestrator;
+
+    @MockitoBean
+    private BookQueryOrchestrator bookQueryOrchestrator;
+
+    @MockitoBean
+    private BookLifecycleOrchestrator bookLifecycleOrchestrator;
+
+    @MockitoBean
+    private BookPageOrchestrator bookPageOrchestrator;
+
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext webApplicationContext;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Value("${security.origin.gateway-secret}")
+    private String gatewaySecret;
+    @Autowired
+    private TestUserDetailsService testUserDetailsService;
+
+    @BeforeEach
+    void setUp() {
+        when(securityOriginProperties.getGatewaySecret()).thenReturn(gatewaySecret);
+        this.mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext)
+                .defaultRequest(get("/").header("X-Gateway-Secret", gatewaySecret))
+                .apply(springSecurity())
+                .build();
+    }
+
+    @Test
+    void testCreateBookWithoutPrincipal() throws Exception {
+        BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", 18);
+        mockMvc.perform(post("/api/v1/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithUserDetails("READER")
+    void testCreateBookWithReaderUserDetails() throws Exception {
+        BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", 18);
+        mockMvc.perform(post("/api/v1/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testSuccessfulCreateBook() throws Exception {
+        BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", 18);
+        mockMvc.perform(post("/api/v1/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookWithIncorrectData() throws Exception {
+        BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", -1);
+        mockMvc.perform(post("/api/v1/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Age limit cannot be negative; "));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateAlreadyExistBook() throws Exception {
+        BookCreateRequestDto dto = new BookCreateRequestDto("Title", "Description", 5);
+
+        doThrow(new BookAlreadyExistException("book_title"))
+                .when(bookLifecycleOrchestrator).createBook(any(), any());
+        mockMvc.perform(post("/api/v1/books")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Book with title book_title is already exist"));
+    }
+
+    @Test
+    void testSuccessfulGetBook() throws Exception {
+        var uuid = UUID.randomUUID();
+        var book = Book.builder().id(uuid).build();
+        when(bookQueryOrchestrator.loadBookByUUID(uuid, null)).thenReturn(book);
+        when(bookMapper.toDto(book, 0))
+                .thenReturn(new BookResponseDto(
+                        uuid, "", "", 5, UUID.randomUUID(), BookStatus.DRAFT, Instant.now(), 0, "", "", 0
+                ));
+        mockMvc.perform(get("/api/v1/books/{uuid}", uuid))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(String.valueOf(uuid)));
+    }
+
+    @Test
+    void testGetNonExistBook() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookQueryOrchestrator.loadBookByUUID(uuid, null)).thenThrow(new BookNotFoundException());
+        mockMvc.perform(get("/api/v1/books/{uuid}", uuid))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Book not found"));
+    }
+
+    @Test
+    void testDownloadBookWithoutPrincipal_publicBookAllowed() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(eq(uuid),isNull()))
+                .thenReturn(InputStream.nullInputStream());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF))
+                .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=book.pdf"));
+    }
+
+    @Test
+    @WithUserDetails("READER")
+    void testDownloadBookWithReaderPrincipal() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(any(), eq(uuid)))
+                .thenReturn(InputStream.nullInputStream());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType(MediaType.APPLICATION_PDF));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testDownloadOwnDraftBook() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(any(), eq(uuid)))
+                .thenReturn(InputStream.nullInputStream());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testDownloadForbiddenDraftBook_anonymousAccess() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(eq(uuid), isNull()))
+                .thenThrow(new BookAccessDeniedException());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("This is not your book"));
+    }
+
+    @Test
+    void testDownloadNonExistBook() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(eq(uuid), isNull()))
+                .thenThrow(new BookNotFoundException());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Book not found"));
+    }
+
+    @Test
+    void testDownloadBookWithNoContentYet() throws Exception {
+        var uuid = UUID.randomUUID();
+        when(bookMediaOrchestrator.loadBookStream(eq(uuid), isNull()))
+                .thenThrow(new BookContentNotFoundException());
+
+        mockMvc.perform(get("/api/v1/books/{uuid}/download", uuid))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Book content not found"));
+    }
+
+    @Test
+    void testCreateBookContentWithoutPrincipal() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithUserDetails("READER")
+    void testCreateBookContentWithReaderUserDetails() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testSuccessfulCreateBookContent() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isAccepted());
+
+        verify(pdfValidator).validateBookPDF(any());
+        verify(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_invalidPdf_throwsValidationException() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.txt", MediaType.TEXT_PLAIN_VALUE, "not a pdf".getBytes());
+
+        doThrow(new PDFValidationException()).when(pdfValidator).validateBookPDF(any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Incorrect PDF file format"));
+
+        verify(bookMediaOrchestrator, never()).createBookContent(any(), any(), any());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_bookNotFound() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        doThrow(new BookNotFoundException())
+                .when(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("Book not found"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_notOwner_throwsAccessDenied() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        doThrow(new BookAccessDeniedException())
+                .when(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("This is not your book"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_contentAlreadyExists() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        doThrow(new BookContentAlreadyExistException())
+                .when(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Book content already exists"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_storageFailure_returnsInternalServerError() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        doThrow(new ContentSaveException())
+                .when(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.message").value("Failed to save book content"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_optimisticLock_returnsConflict() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "pdf", "book.pdf", MediaType.APPLICATION_PDF_VALUE, "content".getBytes());
+
+        doThrow(new BookConcurrentModificationException())
+                .when(bookMediaOrchestrator).createBookContent(eq(uuid), any(), any());
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid)
+                        .file(file))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.message").value("Book is uploading now"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testCreateBookContent_missingFilePart_returnsBadRequest() throws Exception {
+        var uuid = UUID.randomUUID();
+
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/content", uuid))
+                .andExpect(status().isBadRequest());
+
+        verifyNoInteractions(pdfValidator);
+        verify(bookMediaOrchestrator, never()).createBookContent(any(), any(), any());
+    }
+
+    @Test
+    void testSuccessfulCheckBookAvailability() throws Exception {
+        var uuid = UUID.randomUUID();
+        mockMvc.perform(get("/api/v1/books/{uuid}/availability", uuid))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testCheckNonExistBookAvailability() throws Exception {
+        var uuid = UUID.randomUUID();
+        doThrow(new BookNotFoundException())
+                .when(bookQueryOrchestrator).checkBookAvailability(uuid);
+        mockMvc.perform(get("/api/v1/books/{uuid}/availability", uuid))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithUserDetails("READER")
+    void testGetAllBooks() throws Exception {
+        when(bookQueryOrchestrator.loadBooks(0,null, null,testUserDetailsService.getUserId()))
+                .thenReturn(Page.empty());
+        mockMvc.perform(get("/api/v1/books")
+                        .param("page", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.content").isArray());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testSuccessfulUpdateBookCover() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        when(coverValidator.getCoverMediaType(any())).thenReturn(MediaType.IMAGE_PNG);
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isAccepted());
+
+        verify(coverValidator).validateCoverMedia(any(), any());
+        verify(bookMediaOrchestrator).updateBookCover(eq(uuid), any(), any(), any(), any());
+    }
+
+    @Test
+    void testUpdateBookCoverWithoutPrincipal() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithUserDetails("READER")
+    void testUpdateBookCoverWithReaderUserDetails() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateBookCoverWithEmptyFile() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, new byte[0]);
+        when(coverValidator.getCoverMediaType(any())).thenThrow(new UnsupportedCoverTypeException());
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.message").value("This type is not supported"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateBookCoverWithUnsupportedFile() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        when(coverValidator.getCoverMediaType(any())).thenThrow(new UnsupportedCoverTypeException(MediaType.IMAGE_PNG));
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isUnsupportedMediaType())
+                .andExpect(jsonPath("$.message").value("Type image/png is not supported"));
+    }
+
+    @Test
+    @WithUserDetails("AUTHOR")
+    void testUpdateNonDraftingBookCover() throws Exception {
+        var uuid = UUID.randomUUID();
+        MockMultipartFile file = new MockMultipartFile(
+                "cover", "cover.webp", MediaType.IMAGE_PNG_VALUE, "content".getBytes());
+        when(coverValidator.getCoverMediaType(any())).thenReturn(MediaType.IMAGE_PNG);
+        doThrow(new BookNotDraftingException())
+                .when(bookMediaOrchestrator).updateBookCover(any(),any(),any(),anyLong(),any());
+        mockMvc.perform(multipart("/api/v1/books/{uuid}/cover", uuid)
+                        .file(file)
+                        .with(req -> {
+                            req.setMethod("PATCH");
+                            return req;
+                        }))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("Book status isn't \"Draft\""));
+    }
+
+
+}

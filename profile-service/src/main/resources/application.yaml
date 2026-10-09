@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: profile-service
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+server:
+  port: 8001
+  forward-headers-strategy: framework
+rest-client:
+  timeout:
+    connect-timeout: 3s
+    read-timeout: 5s
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookService:
+        slidingWindowType: COUNT_BASED
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        failureRateThreshold: 50
+        waitDurationInOpenState: 10s
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        recordExceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException
+        ignore-exceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
+  retry:
+    instances:
+      bookService:
+        max-attempts: 3
+        wait-duration: 500ms
+        enable-exponential-backoff: true
+        exponential-backoff-multiplier: 2
+        exponential-max-wait-duration: 2s
+        enable-randomized-wait: true
+        randomized-wait-factor: 0.5
+        retry-exceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServerErrorException
+        ignore-exceptions:
+          - com.bookhub.profileservice.exceptions.extensions.RemoteServiceException
+springdoc:
+  api-docs:
+    path: /profile/v3/api-docs
+  swagger-ui:
+    enabled: false
+  show-login-endpoint: true
+  model-and-view-allowed: true

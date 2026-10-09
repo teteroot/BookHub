@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          routes:
+            - id: auth-service
+              uri: http://auth-service:1812
+              predicates:
+                - Path=/api/v1/auth/**, /auth/v3/api-docs/**
+            - id: profile-service
+              uri: http://profile-service:8001
+              predicates:
+                - Path=/api/v1/persons/**, /profile/v3/api-docs/**
+            - id: book-service
+              uri: http://book-service:8002
+              predicates:
+                - Path=/api/v1/books/**, /book/v3/api-docs/**
+          globalcors:
+            cors-configurations:
+              '[/**]':
+                allowedOriginPatterns:
+                  - "*"
+                allowedMethods:
+                  - GET
+                  - POST
+                  - PATCH
+                  - PUT
+                  - DELETE
+                  - OPTIONS
+                allowedHeaders:
+                  - "*"
+                allowCredentials: true
+rate-limiting:
+  bucket4j:
+    tokenCapacity: 3
+    duration: 20s
+security:
+  secured-headers:
+    - X-Gateway-Secret
+    - X-Internal-Secret
+    - X-User-Id
+    - X-User-Role
+server:
+  port: 8888
+  forward-headers-strategy: none
+springdoc:
+  swagger-ui:
+    urls:
+      - name: Auth service API
+        url: /auth/v3/api-docs
+      - name: Profile service API
+        url: /profile/v3/api-docs
+      - name: Book service API
+        url: /book/v3/api-docs
