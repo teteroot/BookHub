@@ -27,6 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @EnableWireMock
 @TestPropertySource(properties = {
         "services.book-service.url=http://localhost:${wiremock.server.port}",
+        "services.auth-service.url=http://localhost:${wiremock.server.port}",
         "rest-client.timeout.connect-timeout=50ms",
         "rest-client.timeout.read-timeout=100ms"
 })

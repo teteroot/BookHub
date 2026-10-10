@@ -1,22 +1,22 @@
 package com.bookhub.bookservice.repositories;
 
+import com.bookhub.bookservice.TestcontainersConfiguration;
 import com.bookhub.bookservice.enums.BookStatus;
 import com.bookhub.bookservice.models.Book;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.utility.TestcontainersConfiguration;
 
 import java.util.List;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+@DataJpaTest
 @Transactional
 @Import(TestcontainersConfiguration.class)
 class BookRepositoryTest {
