@@ -2,6 +2,7 @@ package com.bookhub.profileservice.services.imps;
 
 import com.bookhub.profileservice.dtos.requests.PersonUpdateRequestDto;
 import com.bookhub.profileservice.dtos.responses.BiographyResponseDto;
+import com.bookhub.profileservice.enums.UserRole;
 import com.bookhub.profileservice.exceptions.extensions.*;
 import com.bookhub.profileservice.mappers.PersonMapper;
 import com.bookhub.profileservice.models.Person;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.*;
 
@@ -24,6 +26,9 @@ class PersonServiceImplTest {
 
     @Mock
     private PersonRepository personRepository;
+
+    @Mock
+    private TransactionTemplate transactionTemplate;
 
     @Mock
     private PersonMapper personMapper;
@@ -71,10 +76,11 @@ class PersonServiceImplTest {
         var uuid = UUID.randomUUID();
         var dto = new PersonUpdateRequestDto();
         var person = new Person();
+        person.setRole(UserRole.READER);
         when(personRepository.findById(uuid)).thenReturn(Optional.of(person));
         assertDoesNotThrow(() -> personService.updatePerson(uuid,dto));
         verify(personMapper, times(1)).updatePerson(person,dto);
-        verify(personRepository, times(1)).save(person);
+        verify(transactionTemplate, times(1)).executeWithoutResult(any());
     }
 
     @Test

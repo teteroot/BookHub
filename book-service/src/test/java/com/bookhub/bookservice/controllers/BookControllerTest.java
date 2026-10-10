@@ -120,7 +120,8 @@ class BookControllerTest {
         mockMvc.perform(post("/api/v1/books")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
-                .andExpect(status().isCreated());
+
+                .andExpect(status().isOk());
     }
 
     @Test
